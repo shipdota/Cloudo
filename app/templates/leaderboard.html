@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard - CyberGame{% endblock %}
+
+{% block content %}
+<div class="leaderboard-container">
+    <h2>Global <span class="neon-text">Leaderboard</span></h2>
+
+    <table class="leaderboard-table">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>Score</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for score in scores %}
+            <tr>
+                <td>#{{ loop.index }}</td>
+                <td>
+                    <div class="player-info">
+                        {% if score.profiles and score.profiles.avatar_url %}
+                            <img src="{{ score.profiles.avatar_url }}" alt="Avatar" class="avatar-small">
+                        {% else %}
+                            <div class="avatar-placeholder-small"></div>
+                        {% endif %}
+                        <span>{{ score.profiles.username if score.profiles else 'Unknown' }}</span>
+                    </div>
+                </td>
+                <td class="score-value">{{ score.score }}</td>
+                <td>{{ score.created_at[:10] }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4">No scores yet. Be the first!</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

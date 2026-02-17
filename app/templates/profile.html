@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - CyberGame{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            {% if profile and profile.avatar_url %}
+                <img src="{{ profile.avatar_url }}" alt="Avatar">
+            {% else %}
+                <div class="avatar-placeholder-large"></div>
+            {% endif %}
+        </div>
+        <div class="profile-info">
+            <h2>{{ profile.username if profile else session.user.username }}</h2>
+            <p class="email">{{ session.user.email }}</p>
+            <p class="joined">Player since {{ profile.created_at[:10] if profile.created_at else 'Recently' }}</p>
+        </div>
+    </div>
+
+    <div class="profile-stats">
+        <h3>Your Top Scores</h3>
+        <ul class="score-list">
+            {% for score in scores %}
+            <li>
+                <span class="score-val">{{ score.score }}</span>
+                <span class="score-date">{{ score.created_at[:10] }}</span>
+            </li>
+            {% else %}
+            <li>No games played yet. <a href="{{ url_for('game.game') }}">Play now!</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="profile-actions">
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-danger">Logout</a>
+    </div>
+</div>
+{% endblock %}

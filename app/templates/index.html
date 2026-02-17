@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}CyberGame - Welcome{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Welcome to <span class="neon-text">CyberGame</span></h1>
+    <p>Test your reflexes. Climb the ranks. Become Legend.</p>
+
+    <div class="cta-buttons">
+        {% if session.get('user') %}
+            <a href="{{ url_for('game.game') }}" class="btn btn-primary btn-large">Play Now</a>
+            <a href="{{ url_for('main.profile') }}" class="btn btn-secondary btn-large">My Profile</a>
+        {% else %}
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-large">Join Now</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-secondary btn-large">Login</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="features">
+    <div class="feature-card">
+        <h3>Fast-Paced Action</h3>
+        <p>React quickly to targets appearing on screen. Every millisecond counts.</p>
+    </div>
+    <div class="feature-card">
+        <h3>Global Leaderboards</h3>
+        <p>Compete against players worldwide. Can you reach the top 10?</p>
+    </div>
+    <div class="feature-card">
+        <h3>Track Progress</h3>
+        <p>Monitor your performance history and improve your skills.</p>
+    </div>
+</div>
+{% endblock %}

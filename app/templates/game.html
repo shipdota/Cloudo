@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Play - CyberGame{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <div class="game-header">
+        <div class="stat-box">Score: <span id="score">0</span></div>
+        <div class="stat-box">Time: <span id="time">30</span>s</div>
+    </div>
+
+    <div id="game-area" class="game-area">
+        <div id="start-screen">
+            <h3>Ready to Test Your Reflexes?</h3>
+            <button id="start-btn" class="btn btn-primary">Start Game</button>
+        </div>
+        <div id="game-over-screen" class="hidden">
+            <h3>Game Over!</h3>
+            <p>Your Score: <span id="final-score">0</span></p>
+            <button id="restart-btn" class="btn btn-secondary">Play Again</button>
+        </div>
+        <!-- Targets will be spawned here -->
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='game.js') }}"></script>
+{% endblock %}

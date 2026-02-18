@@ -11,11 +11,23 @@ document.addEventListener('DOMContentLoaded', () => {
     let score = 0;
     let timeLeft = 30;
     let gameInterval;
-    let activeTarget = null;
     let isPlaying = false;
+    let targetElement = null; // Reusable DOM element
 
     // Audio effects (optional/placeholder)
     // const hitSound = new Audio('/static/hit.mp3');
+
+    // Helper to get or create the single target element
+    function getTarget() {
+        if (!targetElement) {
+            targetElement = document.createElement('div');
+            targetElement.classList.add('target');
+            targetElement.addEventListener('mousedown', hitTarget);
+            gameArea.appendChild(targetElement);
+            targetElement.style.display = 'none'; // Initially hidden
+        }
+        return targetElement;
+    }
 
     function startGame() {
         score = 0;
@@ -41,9 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function endGame() {
         clearInterval(gameInterval);
         isPlaying = false;
-        if (activeTarget) {
-            activeTarget.remove();
-            activeTarget = null;
+
+        // Hide the target instead of removing it from DOM
+        if (targetElement) {
+            targetElement.style.display = 'none';
         }
 
         finalScoreDisplay.textContent = score;
@@ -55,10 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function spawnTarget() {
         if (!isPlaying) return;
 
-        if (activeTarget) activeTarget.remove();
-
-        const target = document.createElement('div');
-        target.classList.add('target');
+        // Reuse the existing element
+        const target = getTarget();
 
         // Random position
         // gameArea is relative
@@ -71,10 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
         target.style.left = `${randomX}px`;
         target.style.top = `${randomY}px`;
 
-        target.addEventListener('mousedown', hitTarget);
-
-        gameArea.appendChild(target);
-        activeTarget = target;
+        // Make sure it's visible
+        target.style.display = '';
     }
 
     function hitTarget(e) {

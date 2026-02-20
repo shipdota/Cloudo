@@ -1,14 +1,15 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
+from cachetools import cached, TTLCache
 
 main_bp = Blueprint('main', __name__)
 
-@main_bp.route('/')
-def index():
-    return render_template('index.html')
+# Cache for leaderboard data (1 item, 60 seconds TTL)
+leaderboard_cache = TTLCache(maxsize=1, ttl=60)
 
-@main_bp.route('/leaderboard')
-def leaderboard():
+@cached(leaderboard_cache)
+def get_leaderboard_data():
+    """Fetches leaderboard data from Supabase, cached for 60 seconds."""
     try:
         # Fetch top 10 scores with user details
         response = supabase.table('scores') \
@@ -16,12 +17,18 @@ def leaderboard():
             .order('score', desc=True) \
             .limit(10) \
             .execute()
-
-        scores = response.data
+        return response.data
     except Exception as e:
-        scores = []
         print(f"Error fetching leaderboard: {e}")
+        return []
 
+@main_bp.route('/')
+def index():
+    return render_template('index.html')
+
+@main_bp.route('/leaderboard')
+def leaderboard():
+    scores = get_leaderboard_data()
     return render_template('leaderboard.html', scores=scores)
 
 @main_bp.route('/profile')

@@ -1,5 +1,11 @@
 from flask import Blueprint, render_template, session, redirect, url_for
+from cachetools import TTLCache
+from threading import Lock
 from .db import supabase
+
+# Cache for leaderboard: 1 item (the list of scores), TTL 60 seconds
+leaderboard_cache = TTLCache(maxsize=1, ttl=60)
+leaderboard_lock = Lock()
 
 main_bp = Blueprint('main', __name__)
 
@@ -9,18 +15,31 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
-    try:
-        # Fetch top 10 scores with user details
-        response = supabase.table('scores') \
-            .select('score, created_at, profiles(username, avatar_url)') \
-            .order('score', desc=True) \
-            .limit(10) \
-            .execute()
+    scores = []
 
-        scores = response.data
-    except Exception as e:
-        scores = []
-        print(f"Error fetching leaderboard: {e}")
+    # Try to get scores from cache
+    with leaderboard_lock:
+        if 'top_scores' in leaderboard_cache:
+            scores = leaderboard_cache['top_scores']
+
+    if not scores:
+        try:
+            # Fetch top 10 scores with user details
+            response = supabase.table('scores') \
+                .select('score, created_at, profiles(username, avatar_url)') \
+                .order('score', desc=True) \
+                .limit(10) \
+                .execute()
+
+            scores = response.data
+
+            # Update cache
+            with leaderboard_lock:
+                leaderboard_cache['top_scores'] = scores
+
+        except Exception as e:
+            scores = []
+            print(f"Error fetching leaderboard: {e}")
 
     return render_template('leaderboard.html', scores=scores)
 

@@ -82,6 +82,32 @@ def test_leaderboard(mock_supabase, client):
     assert b"Player1" in response.data
     assert b"100" in response.data
 
+@patch('app.main.supabase')
+def test_leaderboard_caching(mock_supabase, client):
+    # Ensure cache is cleared before test
+    from app.main import leaderboard_cache
+    leaderboard_cache.clear()
+
+    # Mock data
+    mock_data = [
+        {'score': 100, 'created_at': '2023-01-01', 'profiles': {'username': 'Player1', 'avatar_url': ''}}
+    ]
+    mock_execute = MagicMock()
+    mock_execute.data = mock_data
+
+    # Setup mock chain
+    mock_supabase.table.return_value.select.return_value.order.return_value.limit.return_value.execute.return_value = mock_execute
+
+    # First call - should hit DB
+    response1 = client.get('/leaderboard')
+    assert response1.status_code == 200
+    assert mock_supabase.table.call_count == 1
+
+    # Second call - should hit cache
+    response2 = client.get('/leaderboard')
+    assert response2.status_code == 200
+    assert mock_supabase.table.call_count == 1  # Still 1, not 2
+
 @patch('app.game.create_client')
 def test_submit_score(mock_create_client, client):
     # Setup mock user session

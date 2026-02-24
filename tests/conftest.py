@@ -23,3 +23,10 @@ def client(app):
 @pytest.fixture
 def runner(app):
     return app.test_cli_runner()
+
+@pytest.fixture(autouse=True)
+def clear_cache():
+    """Clear the leaderboard cache before each test to ensure test isolation."""
+    from app.main import leaderboard_cache
+    leaderboard_cache.clear()
+    yield

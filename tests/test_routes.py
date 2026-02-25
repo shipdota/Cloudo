@@ -82,6 +82,45 @@ def test_leaderboard(mock_supabase, client):
     assert b"Player1" in response.data
     assert b"100" in response.data
 
+@patch('app.main.supabase')
+def test_leaderboard_caching(mock_supabase, client):
+    # Mock data
+    mock_data = [
+        {'score': 100, 'created_at': '2023-01-01', 'profiles': {'username': 'Player1', 'avatar_url': ''}}
+    ]
+
+    # Mock the execute() result
+    mock_execute = MagicMock()
+    mock_execute.data = mock_data
+
+    # Setup chain: table -> select -> order -> limit -> execute
+    mock_table = MagicMock()
+    mock_select = MagicMock()
+    mock_order = MagicMock()
+    mock_limit = MagicMock()
+
+    mock_supabase.table.return_value = mock_table
+    mock_table.select.return_value = mock_select
+    mock_select.order.return_value = mock_order
+    mock_order.limit.return_value = mock_limit
+    mock_limit.execute.return_value = mock_execute
+
+    # First call - should hit the mock
+    response1 = client.get('/leaderboard')
+    assert response1.status_code == 200
+    assert b"Player1" in response1.data
+
+    # Verify mock was called
+    assert mock_supabase.table.call_count == 1
+
+    # Second call - should use cache and NOT hit the mock again
+    response2 = client.get('/leaderboard')
+    assert response2.status_code == 200
+    assert b"Player1" in response2.data
+
+    # Verify mock was NOT called again (call count should still be 1)
+    assert mock_supabase.table.call_count == 1
+
 @patch('app.game.create_client')
 def test_submit_score(mock_create_client, client):
     # Setup mock user session

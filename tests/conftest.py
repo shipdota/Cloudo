@@ -7,6 +7,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
 
+from app.main import leaderboard_cache
+
+@pytest.fixture(autouse=True)
+def clear_leaderboard_cache():
+    leaderboard_cache['data'] = None
+    leaderboard_cache['timestamp'] = 0
+
 @pytest.fixture
 def app():
     app = create_app()

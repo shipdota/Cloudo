@@ -1,0 +1,3 @@
+## 2023-10-27 - Caching Global Database Queries
+**Learning:** `cachetools` was in `requirements.txt` but to be completely safe and avoid third-party dependency issues in tests and potentially deployment environments, a simple timestamp-based TTL cache using Python's standard library (`time` and `threading.Lock`) was used for caching the global leaderboard query. Also, Supabase throws errors that shouldn't be cached, so error handling should be done outside the cached function.
+**Action:** When caching database queries, always ensure errors aren't cached, and prefer standard library solutions for simple TTL caching unless complex features are needed. Also, make sure to add an `autouse` fixture to clear the cache during tests to avoid test pollution.

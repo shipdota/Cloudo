@@ -9,6 +9,11 @@ from app import create_app
 
 @pytest.fixture
 def app():
+    # Reset leaderboard cache before each test
+    from app.main import leaderboard_cache, cache_lock
+    with cache_lock:
+        leaderboard_cache.clear()
+
     app = create_app()
     app.config.update({
         "TESTING": True,

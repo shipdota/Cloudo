@@ -1,0 +1,3 @@
+## 2024-03-01 - Custom Standard Library Caching over External Dependencies
+**Learning:** For simple temporary data storage like caching a Supabase leaderboard query, the standard library (`time` + `threading.Lock` based dict cache) provides a sufficient performance optimization without the architectural overhead of pulling in external dependencies like Redis or specialized Python caching libraries.
+**Action:** When seeking quick, isolated performance boosts (< 50 lines), always evaluate if standard library constructs can achieve 90% of the benefit before introducing new package requirements.

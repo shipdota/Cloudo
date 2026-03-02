@@ -1,27 +1,50 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
+import time
+import threading
 
 main_bp = Blueprint('main', __name__)
+
+# Cache for the leaderboard to avoid hitting Supabase on every request
+leaderboard_cache = {"data": None, "last_fetched": 0}
+leaderboard_cache_lock = threading.Lock()
+CACHE_TTL = 60  # seconds
 
 @main_bp.route('/')
 def index():
     return render_template('index.html')
 
+def get_leaderboard_data():
+    global leaderboard_cache
+
+    with leaderboard_cache_lock:
+        now = time.time()
+        # Return cached data if valid
+        if leaderboard_cache["data"] is not None and (now - leaderboard_cache["last_fetched"]) < CACHE_TTL:
+            return leaderboard_cache["data"]
+
+        try:
+            # Fetch top 10 scores with user details
+            response = supabase.table('scores') \
+                .select('score, created_at, profiles(username, avatar_url)') \
+                .order('score', desc=True) \
+                .limit(10) \
+                .execute()
+
+            scores = response.data
+
+            # Update cache
+            leaderboard_cache["data"] = scores
+            leaderboard_cache["last_fetched"] = now
+        except Exception as e:
+            scores = []
+            print(f"Error fetching leaderboard: {e}")
+
+        return scores
+
 @main_bp.route('/leaderboard')
 def leaderboard():
-    try:
-        # Fetch top 10 scores with user details
-        response = supabase.table('scores') \
-            .select('score, created_at, profiles(username, avatar_url)') \
-            .order('score', desc=True) \
-            .limit(10) \
-            .execute()
-
-        scores = response.data
-    except Exception as e:
-        scores = []
-        print(f"Error fetching leaderboard: {e}")
-
+    scores = get_leaderboard_data()
     return render_template('leaderboard.html', scores=scores)
 
 @main_bp.route('/profile')

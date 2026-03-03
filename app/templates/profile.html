@@ -20,6 +20,26 @@
     </div>
 
     <div class="profile-stats">
+        <h3>Performance Snapshot</h3>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-label">Tier</span>
+                <span class="stat-value">{{ player_tier }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Games Played</span>
+                <span class="stat-value">{{ games_played }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Best Score</span>
+                <span class="stat-value">{{ best_score }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Average Score</span>
+                <span class="stat-value">{{ average_score }}</span>
+            </div>
+        </div>
+
         <h3>Your Top Scores</h3>
         <ul class="score-list">
             {% for score in scores %}

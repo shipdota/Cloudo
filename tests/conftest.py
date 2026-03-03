@@ -7,6 +7,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
 
+@pytest.fixture(autouse=True)
+def reset_leaderboard_cache():
+    """Reset the leaderboard cache before each test to ensure test isolation."""
+    from app.main import leaderboard_cache, cache_lock
+    with cache_lock:
+        leaderboard_cache.clear()
+
 @pytest.fixture
 def app():
     app = create_app()

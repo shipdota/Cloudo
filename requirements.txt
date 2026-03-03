@@ -17,7 +17,6 @@ h11==0.16.0
 h2==4.3.0
 hpack==4.1.0
 httpcore==1.0.9
-httpx==0.28.1
 hyperframe==6.1.0
 idna==3.11
 iniconfig==2.3.0
@@ -56,7 +55,7 @@ strictyaml==1.7.3
 supabase==2.28.0
 supabase-auth==2.28.0
 supabase-functions==2.28.0
-supafunc==0.3.3
+supafunc==0.5.0
 tenacity==9.1.4
 typing-inspection==0.4.2
 typing_extensions==4.15.0
@@ -65,3 +64,5 @@ websockets==14.0
 Werkzeug==3.1.5
 yarl==1.22.0
 zstandard==0.25.0
+openai>=1.12.0
+stripe>=8.0.0

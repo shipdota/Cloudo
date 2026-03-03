@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}CyberGame - Pricing{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Upgrade to <span class="neon-text">Pro</span></h1>
+    <p>Unlock the full power of CyberGame AI Chat.</p>
+
+    <div class="features" style="justify-content: center;">
+        <div class="feature-card" style="max-width: 400px;">
+            <h3>Pro Membership</h3>
+            <p style="font-size: 2rem; color: var(--success); margin: 1rem 0;">$9.99<span style="font-size: 1rem; color: var(--text-dim);">/mo</span></p>
+            <ul style="text-align: left; margin: 2rem 0; list-style-type: none; padding: 0;">
+                <li style="margin-bottom: 0.5rem;">✓ Access to AI Chat</li>
+                <li style="margin-bottom: 0.5rem;">✓ Powered by GPT-3.5 Turbo</li>
+                <li style="margin-bottom: 0.5rem;">✓ Chat History</li>
+                <li style="margin-bottom: 0.5rem;">✓ Priority Support</li>
+            </ul>
+
+            {% if session.get('user') %}
+                {% if is_pro %}
+                    <button class="btn btn-secondary" disabled style="width: 100%; opacity: 0.7; cursor: not-allowed;">You are already Pro!</button>
+                    <p style="margin-top: 1rem; font-size: 0.8rem;"><a href="{{ url_for('chat.chat_ui') }}">Go to Chat</a></p>
+                {% else %}
+                    <form action="{{ url_for('payments.create_checkout_session') }}" method="POST">
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Subscribe Now</button>
+                    </form>
+                {% endif %}
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary" style="width: 100%; text-align: center;">Log In to Subscribe</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

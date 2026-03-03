@@ -5,6 +5,8 @@ create table profiles (
   username text unique,
   avatar_url text,
   website text,
+  is_pro boolean default false,
+  stripe_customer_id text,
 
   constraint username_length check (char_length(username) >= 3)
 );
@@ -57,3 +59,23 @@ $$ language plpgsql security definer;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Create a table for chat messages
+create table chat_messages (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references profiles(id) not null,
+  role text not null check (role in ('user', 'assistant', 'system')),
+  content text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Set up RLS for chat messages
+alter table chat_messages enable row level security;
+
+create policy "Users can view their own chat messages."
+  on chat_messages for select
+  using ( auth.uid() = user_id );
+
+create policy "Users can insert their own chat messages."
+  on chat_messages for insert
+  with check ( auth.uid() = user_id );

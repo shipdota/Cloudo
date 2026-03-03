@@ -17,6 +17,12 @@ def create_app():
     from .game import game_bp
     app.register_blueprint(game_bp)
 
+    from .chat import chat_bp
+    app.register_blueprint(chat_bp)
+
+    from .payments import payments_bp
+    app.register_blueprint(payments_bp)
+
     @app.route('/health')
     def health():
         return "OK", 200

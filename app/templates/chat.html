@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}CyberGame - Chat AI{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="chat-main">
+        <div class="chat-header">
+            <h2>Cyber<span class="neon-text">Chat</span></h2>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages will be injected here -->
+        </div>
+
+        <div class="chat-input-area">
+            <form id="chat-form">
+                <input type="text" id="chat-input" placeholder="Type a message..." autocomplete="off" required>
+                <button type="submit" class="btn btn-primary" id="send-btn">Send</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        // Fetch chat history on load
+        fetch('/api/chat/history')
+            .then(res => res.json())
+            .then(data => {
+                if (data.messages) {
+                    data.messages.forEach(msg => appendMessage(msg.role, msg.content));
+                    scrollToBottom();
+                }
+            })
+            .catch(err => console.error('Error fetching history:', err));
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            // Add user message to UI immediately
+            appendMessage('user', message);
+            chatInput.value = '';
+            scrollToBottom();
+
+            // Disable input while waiting
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+
+            // Add a temporary loading message
+            const loadingId = 'loading-' + Date.now();
+            appendMessage('assistant', '<span class="loading-dots">Thinking...</span>', loadingId);
+            scrollToBottom();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+
+                // Remove loading message
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) loadingEl.remove();
+
+                if (response.ok) {
+                    appendMessage('assistant', data.message);
+                } else if (response.status === 403 && data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    appendMessage('system', 'Error: ' + (data.error || 'Something went wrong.'));
+                }
+            } catch (error) {
+                // Remove loading message
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) loadingEl.remove();
+                appendMessage('system', 'Network error. Please try again.');
+            } finally {
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+                chatInput.focus();
+                scrollToBottom();
+            }
+        });
+
+        function appendMessage(role, content, id = null) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `chat-message ${role}-message`;
+            if (id) msgDiv.id = id;
+
+            // Simple markdown-like formatting (just handling newlines for now)
+            const formattedContent = content.replace(/\n/g, '<br>');
+
+            const roleName = role === 'user' ? 'You' : role === 'assistant' ? 'AI' : 'System';
+            const roleClass = role === 'user' ? 'msg-role-user' : 'msg-role-ai';
+
+            // Prevent XSS
+            const escapeHTML = str => str.replace(/[&<>'"]/g,
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+
+            const safeContent = escapeHTML(content).replace(/\n/g, '<br>');
+
+            msgDiv.innerHTML = `
+                <div class="msg-role ${roleClass}">${roleName}</div>
+                <div class="msg-content">${safeContent}</div>
+            `;
+
+            chatMessages.appendChild(msgDiv);
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    });
+</script>
+{% endblock %}

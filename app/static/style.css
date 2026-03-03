@@ -273,6 +273,58 @@ a:hover {
     text-shadow: 0 0 5px var(--primary);
 }
 
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--text-dim);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.stat-label {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.stat-value {
+    color: var(--primary);
+    font-size: 1.3rem;
+    font-weight: bold;
+}
+
+.score-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.score-list li {
+    display: flex;
+    justify-content: space-between;
+    background: var(--card-bg);
+    border: 1px solid var(--text-dim);
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.6rem;
+}
+
+.score-val {
+    color: var(--success);
+    font-weight: bold;
+}
+
+.score-date {
+    color: var(--text-dim);
+}
+
 /* Hero */
 .hero {
     text-align: center;

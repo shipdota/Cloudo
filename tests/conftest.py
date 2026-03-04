@@ -23,3 +23,9 @@ def client(app):
 @pytest.fixture
 def runner(app):
     return app.test_cli_runner()
+
+@pytest.fixture(autouse=True)
+def reset_leaderboard_cache():
+    from app.main import leaderboard_cache
+    leaderboard_cache['data'] = None
+    leaderboard_cache['timestamp'] = 0

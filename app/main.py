@@ -1,7 +1,40 @@
+import time
+import threading
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
 
 main_bp = Blueprint('main', __name__)
+
+# Cache for leaderboard to avoid excessive DB calls
+leaderboard_cache = {"data": None, "timestamp": 0}
+cache_lock = threading.Lock()
+CACHE_TTL = 60  # seconds
+
+def get_leaderboard_data():
+    global leaderboard_cache
+    current_time = time.time()
+
+    with cache_lock:
+        if leaderboard_cache["data"] is not None and (current_time - leaderboard_cache["timestamp"]) < CACHE_TTL:
+            return leaderboard_cache["data"]
+
+        try:
+            # Fetch top 10 scores with user details
+            response = supabase.table('scores') \
+                .select('score, created_at, profiles(username, avatar_url)') \
+                .order('score', desc=True) \
+                .limit(10) \
+                .execute()
+
+            scores = response.data
+
+            # Update cache
+            leaderboard_cache["data"] = scores
+            leaderboard_cache["timestamp"] = current_time
+            return scores
+        except Exception as e:
+            print(f"Error fetching leaderboard: {e}")
+            return []
 
 @main_bp.route('/')
 def index():
@@ -9,19 +42,8 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
-    try:
-        # Fetch top 10 scores with user details
-        response = supabase.table('scores') \
-            .select('score, created_at, profiles(username, avatar_url)') \
-            .order('score', desc=True) \
-            .limit(10) \
-            .execute()
-
-        scores = response.data
-    except Exception as e:
-        scores = []
-        print(f"Error fetching leaderboard: {e}")
-
+    # ⚡ Bolt: Use TTL cache to avoid expensive repetitive DB queries on hot path
+    scores = get_leaderboard_data()
     return render_template('leaderboard.html', scores=scores)
 
 @main_bp.route('/profile')

@@ -1,0 +1,3 @@
+## 2026-03-07 - Implement TTL Cache for Frequent Global Leaderboard Queries
+**Learning:** Frequent queries to Supabase for the top leaderboard scores (which also perform a join with the profiles table) were causing unnecessary database load on every request. Since the leaderboard doesn't need to strictly reflect updates with millisecond precision, the absence of caching on this high-traffic endpoint created a significant performance bottleneck.
+**Action:** When implementing global or aggregated views that have high read volumes but don't strictly require real-time accuracy, always implement an in-memory TTL cache (e.g., using a standard dictionary and threading.Lock in Python) to reduce direct database queries and decrease response latency.

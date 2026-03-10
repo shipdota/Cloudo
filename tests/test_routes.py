@@ -82,7 +82,7 @@ def test_leaderboard(mock_supabase, client):
     assert b"Player1" in response.data
     assert b"100" in response.data
 
-@patch('app.game.create_client')
+@patch('app.game.get_cached_client')
 def test_submit_score(mock_create_client, client):
     # Setup mock user session
     with client.session_transaction() as sess:

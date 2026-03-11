@@ -1,8 +1,18 @@
 from flask import Blueprint, render_template, jsonify, request, session, redirect, url_for, flash
 from supabase import create_client, Client, ClientOptions
 import os
+import functools
 
 game_bp = Blueprint('game', __name__)
+
+@functools.lru_cache(maxsize=128)
+def get_user_client(url: str, key: str, token: str) -> Client:
+    """Cache the Supabase client to avoid expensive instantiation per request."""
+    return create_client(
+        url,
+        key,
+        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+    )
 
 @game_bp.route('/game')
 def game():
@@ -29,14 +39,10 @@ def submit_score():
     key = os.environ.get("SUPABASE_KEY")
 
     try:
-        # Create a new client instance authenticated as the user
-        # This ensures RLS policies are respected correctly
-        # Pass headers via ClientOptions
-        user_client: Client = create_client(
-            url,
-            key,
-            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-        )
+        # Get cached client authenticated as the user
+        # This ensures RLS policies are respected correctly without the
+        # overhead of creating a new httpx.Client on every request
+        user_client: Client = get_user_client(url, key, token)
 
         response = user_client.table("scores").insert({
             "user_id": user_id,

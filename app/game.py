@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, jsonify, request, session, redirect, url_for, flash
 from supabase import create_client, Client, ClientOptions
 import os
+from functools import lru_cache
 
 game_bp = Blueprint('game', __name__)
 
@@ -10,6 +11,14 @@ def game():
         flash("You must be logged in to play.", "danger")
         return redirect(url_for('auth.login'))
     return render_template('game.html')
+
+@lru_cache(maxsize=128)
+def get_user_client(token: str) -> Client:
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_KEY")
+    return create_client(
+        url, key, options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+    )
 
 @game_bp.route('/api/submit-score', methods=['POST'])
 def submit_score():
@@ -25,18 +34,8 @@ def submit_score():
     user_id = session['user']['id']
     token = session['user']['access_token']
 
-    url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_KEY")
-
     try:
-        # Create a new client instance authenticated as the user
-        # This ensures RLS policies are respected correctly
-        # Pass headers via ClientOptions
-        user_client: Client = create_client(
-            url,
-            key,
-            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-        )
+        user_client = get_user_client(token)
 
         response = user_client.table("scores").insert({
             "user_id": user_id,

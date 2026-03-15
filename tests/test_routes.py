@@ -82,15 +82,15 @@ def test_leaderboard(mock_supabase, client):
     assert b"Player1" in response.data
     assert b"100" in response.data
 
-@patch('app.game.create_client')
-def test_submit_score(mock_create_client, client):
+@patch('app.game.get_user_client')
+def test_submit_score(mock_get_user_client, client):
     # Setup mock user session
     with client.session_transaction() as sess:
         sess['user'] = {'id': '123', 'email': 'test@example.com', 'username': 'tester', 'access_token': 'fake', 'refresh_token': 'fake'}
 
     # Mock client and insert
     mock_client_instance = MagicMock()
-    mock_create_client.return_value = mock_client_instance
+    mock_get_user_client.return_value = mock_client_instance
 
     mock_insert_response = MagicMock()
     mock_insert_response.data = [{'id': 1, 'score': 50}]

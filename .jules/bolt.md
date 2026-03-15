@@ -1,0 +1,3 @@
+## 2024-05-24 - Supabase Client Instantiation Overhead
+**Learning:** In Supabase, creating a client via `create_client()` creates a new underlying `httpx.Client` connection pool every time. When authenticating requests with a user's token (Row Level Security), doing this repeatedly inside route handlers creates a severe performance bottleneck and memory overhead.
+**Action:** Use `functools.lru_cache` to cache thread-safe client instances keyed by the user's access token, preserving RLS security while heavily optimizing performance across frequent authenticated actions (like game score submissions).

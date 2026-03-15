@@ -1,6 +1,19 @@
 from flask import Blueprint, render_template, jsonify, request, session, redirect, url_for, flash
 from supabase import create_client, Client, ClientOptions
 import os
+from functools import lru_cache
+
+# Cache the Supabase client instances keyed by user token (and url/key).
+# This avoids the high overhead of repeatedly creating httpx.Client connection pools
+# on every authenticated request, which is a major bottleneck.
+# maxsize=128 limits the cache size to prevent memory leaks from inactive sessions.
+@lru_cache(maxsize=128)
+def get_user_client(url: str, key: str, token: str) -> Client:
+    return create_client(
+        url,
+        key,
+        options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+    )
 
 game_bp = Blueprint('game', __name__)
 
@@ -29,14 +42,10 @@ def submit_score():
     key = os.environ.get("SUPABASE_KEY")
 
     try:
-        # Create a new client instance authenticated as the user
-        # This ensures RLS policies are respected correctly
-        # Pass headers via ClientOptions
-        user_client: Client = create_client(
-            url,
-            key,
-            options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
-        )
+        # Get a cached client instance authenticated as the user
+        # This ensures RLS policies are respected correctly without the overhead
+        # of creating a new httpx.Client connection pool on every request
+        user_client: Client = get_user_client(url, key, token)
 
         response = user_client.table("scores").insert({
             "user_id": user_id,

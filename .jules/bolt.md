@@ -1,0 +1,3 @@
+## 2024-05-18 - Supabase `create_client` overhead in per-request handlers
+**Learning:** In contexts requiring per-user authentication for RLS (like Stripe webhooks or authenticated API endpoints), instantiating a new `supabase.Client` via `create_client(url, key, options)` creates a new `httpx.Client` internally. This destroys connection pooling and introduces severe latency overhead, essentially establishing a fresh TLS handshake on every request.
+**Action:** Always wrap RLS-authenticated Supabase client instantiation in an `@functools.lru_cache` (or equivalent thread-safe caching mechanism) keyed by the user's access token, URL, and key. This preserves thread-safety and security while retaining connection pool benefits.

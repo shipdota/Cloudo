@@ -1,0 +1,3 @@
+## 2024-05-24 - Layout Thrashing in High-Frequency Frontend Logic
+**Learning:** Querying layout-triggering properties like `clientWidth` and `clientHeight` inside high-frequency functions (e.g., game loop or target spawn functions) causes synchronous DOM layout reflows (layout thrashing), which severely degrades frontend performance.
+**Action:** Always cache these properties initially and update them only on `resize` events to avoid forcing the browser to recalculate layouts synchronously during high-frequency execution.

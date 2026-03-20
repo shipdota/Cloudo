@@ -14,6 +14,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeTarget = null;
     let isPlaying = false;
 
+    // Cache layout properties to prevent thrashing
+    let gameAreaWidth = gameArea.clientWidth;
+    let gameAreaHeight = gameArea.clientHeight;
+
+    // Update cached dimensions on resize
+    window.addEventListener('resize', () => {
+        gameAreaWidth = gameArea.clientWidth;
+        gameAreaHeight = gameArea.clientHeight;
+    });
+
     // Audio effects (optional/placeholder)
     // const hitSound = new Audio('/static/hit.mp3');
 
@@ -62,8 +72,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Random position
         // gameArea is relative
-        const maxX = gameArea.clientWidth - 50; // 50 is approx target width
-        const maxY = gameArea.clientHeight - 50;
+        // Use cached dimensions instead of synchronous layout reads
+        const maxX = gameAreaWidth - 50; // 50 is approx target width
+        const maxY = gameAreaHeight - 50;
 
         const randomX = Math.floor(Math.random() * maxX);
         const randomY = Math.floor(Math.random() * maxY);

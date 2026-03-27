@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from .db import supabase
-from gotrue.errors import AuthApiError
+from supabase_auth.errors import AuthApiError
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -79,7 +79,7 @@ def login():
 def logout():
     try:
         supabase.auth.sign_out()
-    except:
+    except Exception:
         pass
     session.clear()
     flash('You have been logged out.', 'info')

@@ -1,7 +1,16 @@
 from flask import Blueprint, render_template, session, redirect, url_for
+import time
 from .db import supabase
 
 main_bp = Blueprint('main', __name__)
+
+# Simple in-memory cache for the leaderboard
+# TTL of 60 seconds to reduce database overhead
+leaderboard_cache = {
+    'data': None,
+    'timestamp': 0
+}
+CACHE_TTL = 60
 
 @main_bp.route('/')
 def index():
@@ -9,18 +18,31 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
-    try:
-        # Fetch top 10 scores with user details
-        response = supabase.table('scores') \
-            .select('score, created_at, profiles(username, avatar_url)') \
-            .order('score', desc=True) \
-            .limit(10) \
-            .execute()
+    current_time = time.time()
 
-        scores = response.data
-    except Exception as e:
-        scores = []
-        print(f"Error fetching leaderboard: {e}")
+    # Check cache first
+    if leaderboard_cache['data'] is not None and (current_time - leaderboard_cache['timestamp']) < CACHE_TTL:
+        print("Leaderboard cache hit", flush=True)
+        scores = leaderboard_cache['data']
+    else:
+        print("Leaderboard cache miss", flush=True)
+        try:
+            # Fetch top 10 scores with user details
+            response = supabase.table('scores') \
+                .select('score, created_at, profiles(username, avatar_url)') \
+                .order('score', desc=True) \
+                .limit(10) \
+                .execute()
+
+            scores = response.data
+
+            # Update cache
+            leaderboard_cache['data'] = scores
+            leaderboard_cache['timestamp'] = current_time
+
+        except Exception as e:
+            scores = []
+            print(f"Error fetching leaderboard: {e}", flush=True)
 
     return render_template('leaderboard.html', scores=scores)
 

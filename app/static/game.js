@@ -14,6 +14,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeTarget = null;
     let isPlaying = false;
 
+    // Bolt: Cache layout properties to prevent layout thrashing
+    let gameAreaWidth = 0;
+    let gameAreaHeight = 0;
+
+    function updateGameAreaDimensions() {
+        gameAreaWidth = gameArea.clientWidth;
+        gameAreaHeight = gameArea.clientHeight;
+        console.log(`⚡ Bolt: Game area dimensions updated: ${gameAreaWidth}x${gameAreaHeight}`);
+    }
+
     // Audio effects (optional/placeholder)
     // const hitSound = new Audio('/static/hit.mp3');
 
@@ -60,10 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const target = document.createElement('div');
         target.classList.add('target');
 
-        // Random position
-        // gameArea is relative
-        const maxX = gameArea.clientWidth - 50; // 50 is approx target width
-        const maxY = gameArea.clientHeight - 50;
+        // Bolt: Use cached dimensions to prevent layout thrashing
+        const maxX = gameAreaWidth - 50; // 50 is approx target width
+        const maxY = gameAreaHeight - 50;
 
         const randomX = Math.floor(Math.random() * maxX);
         const randomY = Math.floor(Math.random() * maxY);
@@ -111,4 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     startBtn.addEventListener('click', startGame);
     restartBtn.addEventListener('click', startGame);
+
+    // Initial dimension capture and update on resize
+    updateGameAreaDimensions();
+    window.addEventListener('resize', updateGameAreaDimensions);
 });

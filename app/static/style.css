@@ -173,16 +173,41 @@ a:hover {
 .target {
     width: 50px;
     height: 50px;
-    background: var(--primary);
     border-radius: 50%;
     position: absolute;
-    box-shadow: 0 0 10px var(--primary);
     transition: transform 0.1s;
+    animation: spawn-pulse 0.3s ease-out;
+}
+
+.target-normal {
+    background: var(--primary);
+    box-shadow: 0 0 15px var(--primary);
+}
+
+.target-bonus {
+    background: #ffcc00; /* Gold */
+    box-shadow: 0 0 20px #ffcc00;
+    animation: bonus-glow 1s infinite alternate, spawn-pulse 0.3s ease-out;
+}
+
+.target-penalty {
+    background: var(--danger);
+    box-shadow: 0 0 15px var(--danger);
 }
 
 .target:active {
     transform: scale(0.9);
-    background: white;
+    filter: brightness(1.5);
+}
+
+@keyframes spawn-pulse {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes bonus-glow {
+    from { box-shadow: 0 0 10px #ffcc00; }
+    to { box-shadow: 0 0 30px #ffcc00; }
 }
 
 .hidden {

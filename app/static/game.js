@@ -11,8 +11,27 @@ document.addEventListener('DOMContentLoaded', () => {
     let score = 0;
     let timeLeft = 30;
     let gameInterval;
-    let activeTarget = null;
     let isPlaying = false;
+
+    // ⚡ Bolt: Caching layout dimensions and pooling the target element to avoid layout thrashing and memory churn
+    let maxX = 0;
+    let maxY = 0;
+
+    const pooledTarget = document.createElement('div');
+    pooledTarget.classList.add('target');
+    pooledTarget.style.display = 'none';
+
+    // Add event listener directly to pooledTarget
+    pooledTarget.addEventListener('mousedown', hitTarget);
+    gameArea.appendChild(pooledTarget);
+
+    function updateGameAreaBounds() {
+        maxX = gameArea.clientWidth - 50; // 50 is approx target width
+        maxY = gameArea.clientHeight - 50;
+    }
+
+    window.addEventListener('resize', updateGameAreaBounds);
+    updateGameAreaBounds(); // Initial bounds calculation
 
     // Audio effects (optional/placeholder)
     // const hitSound = new Audio('/static/hit.mp3');
@@ -27,6 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
         startScreen.classList.add('hidden');
         gameOverScreen.classList.add('hidden');
 
+        // Ensure bounds are updated before spawning
+        updateGameAreaBounds();
         spawnTarget();
 
         gameInterval = setInterval(() => {
@@ -41,10 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function endGame() {
         clearInterval(gameInterval);
         isPlaying = false;
-        if (activeTarget) {
-            activeTarget.remove();
-            activeTarget = null;
-        }
+        pooledTarget.style.display = 'none';
 
         finalScoreDisplay.textContent = score;
         gameOverScreen.classList.remove('hidden');
@@ -55,26 +73,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function spawnTarget() {
         if (!isPlaying) return;
 
-        if (activeTarget) activeTarget.remove();
-
-        const target = document.createElement('div');
-        target.classList.add('target');
-
-        // Random position
-        // gameArea is relative
-        const maxX = gameArea.clientWidth - 50; // 50 is approx target width
-        const maxY = gameArea.clientHeight - 50;
-
+        // ⚡ Bolt: Update inline styles of pooled element instead of creating new DOM nodes
         const randomX = Math.floor(Math.random() * maxX);
         const randomY = Math.floor(Math.random() * maxY);
 
-        target.style.left = `${randomX}px`;
-        target.style.top = `${randomY}px`;
-
-        target.addEventListener('mousedown', hitTarget);
-
-        gameArea.appendChild(target);
-        activeTarget = target;
+        pooledTarget.style.left = `${randomX}px`;
+        pooledTarget.style.top = `${randomY}px`;
+        pooledTarget.style.display = 'block';
     }
 
     function hitTarget(e) {

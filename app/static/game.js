@@ -11,8 +11,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let score = 0;
     let timeLeft = 30;
     let gameInterval;
-    let activeTarget = null;
     let isPlaying = false;
+
+    // DOM Object Pooling to prevent GC pauses and layout thrashing
+    const pooledTarget = document.createElement('div');
+    pooledTarget.classList.add('target', 'hidden');
+    gameArea.appendChild(pooledTarget);
+
+    pooledTarget.addEventListener('mousedown', hitTarget);
 
     // Audio effects (optional/placeholder)
     // const hitSound = new Audio('/static/hit.mp3');
@@ -41,10 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function endGame() {
         clearInterval(gameInterval);
         isPlaying = false;
-        if (activeTarget) {
-            activeTarget.remove();
-            activeTarget = null;
-        }
+        pooledTarget.classList.add('hidden');
 
         finalScoreDisplay.textContent = score;
         gameOverScreen.classList.remove('hidden');
@@ -55,10 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function spawnTarget() {
         if (!isPlaying) return;
 
-        if (activeTarget) activeTarget.remove();
-
-        const target = document.createElement('div');
-        target.classList.add('target');
+        pooledTarget.classList.add('hidden'); // Ensure hidden during move
 
         // Random position
         // gameArea is relative
@@ -68,13 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const randomX = Math.floor(Math.random() * maxX);
         const randomY = Math.floor(Math.random() * maxY);
 
-        target.style.left = `${randomX}px`;
-        target.style.top = `${randomY}px`;
-
-        target.addEventListener('mousedown', hitTarget);
-
-        gameArea.appendChild(target);
-        activeTarget = target;
+        pooledTarget.style.left = `${randomX}px`;
+        pooledTarget.style.top = `${randomY}px`;
+        pooledTarget.classList.remove('hidden'); // Show target
     }
 
     function hitTarget(e) {

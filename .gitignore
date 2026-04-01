@@ -4,3 +4,4 @@ __pycache__/
 flask.log
 venv/
 .pytest_cache/
+node_modules/

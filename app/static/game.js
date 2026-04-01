@@ -11,11 +11,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let score = 0;
     let timeLeft = 30;
     let gameInterval;
-    let activeTarget = null;
+    let pooledTarget = null;
     let isPlaying = false;
+
+    // Cached layout dimensions to prevent layout thrashing
+    let maxX = 0;
+    let maxY = 0;
 
     // Audio effects (optional/placeholder)
     // const hitSound = new Audio('/static/hit.mp3');
+
+    function initTargetPool() {
+        if (!pooledTarget) {
+            pooledTarget = document.createElement('div');
+            pooledTarget.classList.add('target');
+            pooledTarget.classList.add('hidden');
+            pooledTarget.addEventListener('mousedown', hitTarget);
+            gameArea.appendChild(pooledTarget);
+        }
+    }
 
     function startGame() {
         score = 0;
@@ -26,6 +40,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         startScreen.classList.add('hidden');
         gameOverScreen.classList.add('hidden');
+
+        // Initialize object pool and cache dimensions once per game
+        initTargetPool();
+        maxX = gameArea.clientWidth - 50; // 50 is approx target width
+        maxY = gameArea.clientHeight - 50;
 
         spawnTarget();
 
@@ -41,9 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function endGame() {
         clearInterval(gameInterval);
         isPlaying = false;
-        if (activeTarget) {
-            activeTarget.remove();
-            activeTarget = null;
+        if (pooledTarget) {
+            pooledTarget.classList.add('hidden'); // Hide instead of remove
         }
 
         finalScoreDisplay.textContent = score;
@@ -53,32 +71,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function spawnTarget() {
-        if (!isPlaying) return;
+        if (!isPlaying || !pooledTarget) return;
 
-        if (activeTarget) activeTarget.remove();
-
-        const target = document.createElement('div');
-        target.classList.add('target');
-
-        // Random position
-        // gameArea is relative
-        const maxX = gameArea.clientWidth - 50; // 50 is approx target width
-        const maxY = gameArea.clientHeight - 50;
-
+        // Random position using cached dimensions
         const randomX = Math.floor(Math.random() * maxX);
         const randomY = Math.floor(Math.random() * maxY);
 
-        target.style.left = `${randomX}px`;
-        target.style.top = `${randomY}px`;
-
-        target.addEventListener('mousedown', hitTarget);
-
-        gameArea.appendChild(target);
-        activeTarget = target;
+        // Update position and show pooled target
+        pooledTarget.style.left = `${randomX}px`;
+        pooledTarget.style.top = `${randomY}px`;
+        pooledTarget.classList.remove('hidden');
     }
 
     function hitTarget(e) {
         if (!isPlaying) return;
+
+        // Hide immediately to prevent double clicks and prepare for next spawn
+        pooledTarget.classList.add('hidden');
 
         // Visual feedback
         // maybe add a particle effect later

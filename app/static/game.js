@@ -11,8 +11,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let score = 0;
     let timeLeft = 30;
     let gameInterval;
-    let activeTarget = null;
     let isPlaying = false;
+    let maxX = 0;
+    let maxY = 0;
+
+    // ⚡ Bolt: DOM Object Pooling
+    // Create a single target element once on load and reuse it
+    // instead of repeatedly creating and removing DOM elements.
+    const activeTarget = document.createElement('div');
+    activeTarget.classList.add('target', 'hidden');
+    gameArea.appendChild(activeTarget);
+    activeTarget.addEventListener('mousedown', hitTarget);
 
     // Audio effects (optional/placeholder)
     // const hitSound = new Audio('/static/hit.mp3');
@@ -26,6 +35,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         startScreen.classList.add('hidden');
         gameOverScreen.classList.add('hidden');
+
+        // ⚡ Bolt: Layout Caching
+        // Cache game area dimensions to prevent layout thrashing
+        // during the game loop.
+        maxX = gameArea.clientWidth - 50; // 50 is approx target width
+        maxY = gameArea.clientHeight - 50;
 
         spawnTarget();
 
@@ -41,10 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function endGame() {
         clearInterval(gameInterval);
         isPlaying = false;
-        if (activeTarget) {
-            activeTarget.remove();
-            activeTarget = null;
-        }
+        activeTarget.classList.add('hidden');
 
         finalScoreDisplay.textContent = score;
         gameOverScreen.classList.remove('hidden');
@@ -55,26 +67,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function spawnTarget() {
         if (!isPlaying) return;
 
-        if (activeTarget) activeTarget.remove();
-
-        const target = document.createElement('div');
-        target.classList.add('target');
-
         // Random position
-        // gameArea is relative
-        const maxX = gameArea.clientWidth - 50; // 50 is approx target width
-        const maxY = gameArea.clientHeight - 50;
-
+        // Uses cached maxX and maxY values
         const randomX = Math.floor(Math.random() * maxX);
         const randomY = Math.floor(Math.random() * maxY);
 
-        target.style.left = `${randomX}px`;
-        target.style.top = `${randomY}px`;
-
-        target.addEventListener('mousedown', hitTarget);
-
-        gameArea.appendChild(target);
-        activeTarget = target;
+        activeTarget.style.left = `${randomX}px`;
+        activeTarget.style.top = `${randomY}px`;
+        activeTarget.classList.remove('hidden');
     }
 
     function hitTarget(e) {

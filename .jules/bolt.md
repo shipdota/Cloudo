@@ -1,0 +1,3 @@
+## 2024-05-24 - [DOM Object Pooling & Layout Thrashing]
+**Learning:** Frequent DOM addition/removal (`document.createElement` and `element.remove()`) and repetitive reads of layout properties (`clientWidth`, `clientHeight`) during a rapid game loop (like `spawnTarget()`) can lead to layout thrashing, excessive garbage collection, and dropped frames.
+**Action:** Use DOM Object Pooling (instantiate elements once and toggle visibility via CSS) and Layout Caching (calculate container bounds once and store them) for high-frequency render updates.

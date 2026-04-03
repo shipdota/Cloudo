@@ -1,0 +1,3 @@
+## 2024-03-24 - Supabase Python Client N+1 Optimization
+**Learning:** The official Supabase Python client natively operates synchronously, meaning that executing multiple independent network requests (like fetching a user profile and their recent scores in `/profile`) blocks the main thread sequentially and causes a performance bottleneck.
+**Action:** Since the Supabase client handles synchronous HTTP requests but is essentially executing separate network bounds, `concurrent.futures.ThreadPoolExecutor` should be leveraged to concurrently map parallel network requests and reduce the overall response latency of endpoints waiting on multiple independent queries.

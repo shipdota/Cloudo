@@ -1,3 +1,4 @@
+import concurrent.futures
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
 
@@ -32,18 +33,28 @@ def profile():
     user_id = session['user']['id']
 
     try:
-        # Fetch profile
-        profile_res = supabase.table('profiles').select('*').eq('id', user_id).single().execute()
+        # Optimization: Fetch profile and scores concurrently to reduce page load time
+        # The Supabase Python client is synchronous, so we use ThreadPoolExecutor
+        # to execute these two independent network requests in parallel.
+        def fetch_profile():
+            return supabase.table('profiles').select('*').eq('id', user_id).single().execute()
+
+        def fetch_scores():
+            return supabase.table('scores') \
+                .select('*') \
+                .eq('user_id', user_id) \
+                .order('score', desc=True) \
+                .limit(5) \
+                .execute()
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            profile_future = executor.submit(fetch_profile)
+            scores_future = executor.submit(fetch_scores)
+
+            profile_res = profile_future.result()
+            scores_res = scores_future.result()
+
         user_profile = profile_res.data
-
-        # Fetch user's recent top scores
-        scores_res = supabase.table('scores') \
-            .select('*') \
-            .eq('user_id', user_id) \
-            .order('score', desc=True) \
-            .limit(5) \
-            .execute()
-
         user_scores = scores_res.data
 
     except Exception as e:

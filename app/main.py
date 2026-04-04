@@ -1,3 +1,4 @@
+import concurrent.futures
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
 
@@ -32,19 +33,25 @@ def profile():
     user_id = session['user']['id']
 
     try:
-        # Fetch profile
-        profile_res = supabase.table('profiles').select('*').eq('id', user_id).single().execute()
-        user_profile = profile_res.data
+        # Define functions for concurrent execution
+        def fetch_profile():
+            return supabase.table('profiles').select('*').eq('id', user_id).single().execute().data
 
-        # Fetch user's recent top scores
-        scores_res = supabase.table('scores') \
-            .select('*') \
-            .eq('user_id', user_id) \
-            .order('score', desc=True) \
-            .limit(5) \
-            .execute()
+        def fetch_scores():
+            return supabase.table('scores') \
+                .select('*') \
+                .eq('user_id', user_id) \
+                .order('score', desc=True) \
+                .limit(5) \
+                .execute().data
 
-        user_scores = scores_res.data
+        # Fetch profile and scores concurrently to reduce latency
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future_profile = executor.submit(fetch_profile)
+            future_scores = executor.submit(fetch_scores)
+
+            user_profile = future_profile.result()
+            user_scores = future_scores.result()
 
     except Exception as e:
         user_profile = {}

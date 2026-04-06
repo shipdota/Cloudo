@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, session, redirect, url_for
+import concurrent.futures
 from .db import supabase
 
 main_bp = Blueprint('main', __name__)
@@ -32,18 +33,27 @@ def profile():
     user_id = session['user']['id']
 
     try:
-        # Fetch profile
-        profile_res = supabase.table('profiles').select('*').eq('id', user_id).single().execute()
+        # Define independent queries
+        def fetch_profile():
+            return supabase.table('profiles').select('*').eq('id', user_id).single().execute()
+
+        def fetch_scores():
+            return supabase.table('scores') \
+                .select('*') \
+                .eq('user_id', user_id) \
+                .order('score', desc=True) \
+                .limit(5) \
+                .execute()
+
+        # Execute queries concurrently to reduce latency
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future_profile = executor.submit(fetch_profile)
+            future_scores = executor.submit(fetch_scores)
+
+            profile_res = future_profile.result()
+            scores_res = future_scores.result()
+
         user_profile = profile_res.data
-
-        # Fetch user's recent top scores
-        scores_res = supabase.table('scores') \
-            .select('*') \
-            .eq('user_id', user_id) \
-            .order('score', desc=True) \
-            .limit(5) \
-            .execute()
-
         user_scores = scores_res.data
 
     except Exception as e:

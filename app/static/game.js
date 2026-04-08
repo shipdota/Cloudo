@@ -11,7 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let score = 0;
     let timeLeft = 30;
     let gameInterval;
-    let activeTarget = null;
+    // Object Pooling: Reusing a single DOM element instead of creating/destroying it
+    // Reduces garbage collection pauses and DOM thrashing
+    let pooledTarget = null;
     let isPlaying = false;
 
     // Audio effects (optional/placeholder)
@@ -41,9 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function endGame() {
         clearInterval(gameInterval);
         isPlaying = false;
-        if (activeTarget) {
-            activeTarget.remove();
-            activeTarget = null;
+        if (pooledTarget) {
+            // Hide the pooled target instead of removing it from the DOM
+            pooledTarget.classList.add('hidden');
         }
 
         finalScoreDisplay.textContent = score;
@@ -55,10 +57,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function spawnTarget() {
         if (!isPlaying) return;
 
-        if (activeTarget) activeTarget.remove();
+        // Initialize pooled target if it doesn't exist
+        if (!pooledTarget) {
+            pooledTarget = document.createElement('div');
+            pooledTarget.classList.add('target');
+            pooledTarget.addEventListener('mousedown', hitTarget);
+            gameArea.appendChild(pooledTarget);
+        }
 
-        const target = document.createElement('div');
-        target.classList.add('target');
+        // Show the pooled target
+        pooledTarget.classList.remove('hidden');
 
         // Random position
         // gameArea is relative
@@ -68,13 +76,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const randomX = Math.floor(Math.random() * maxX);
         const randomY = Math.floor(Math.random() * maxY);
 
-        target.style.left = `${randomX}px`;
-        target.style.top = `${randomY}px`;
-
-        target.addEventListener('mousedown', hitTarget);
-
-        gameArea.appendChild(target);
-        activeTarget = target;
+        pooledTarget.style.left = `${randomX}px`;
+        pooledTarget.style.top = `${randomY}px`;
     }
 
     function hitTarget(e) {

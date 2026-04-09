@@ -1,0 +1,3 @@
+## 2024-05-24 - [Playwright Standalone File Loading]
+**Learning:** When using Playwright to verify isolated HTML files via absolute `file://` URLs located outside the workspace (e.g., in `/home/jules/verification/`), relative asset paths (like `../app/static/...`) fail to resolve because they are relative to the `/home/jules/verification/` directory, not the web root.
+**Action:** When mocking UI tests by generating standalone `.html` wrappers, always inject absolute paths anchored to the actual workspace directory (e.g., `<link rel="stylesheet" href="/app/app/static/style.css">`) so the browser correctly loads the local project files.

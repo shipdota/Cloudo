@@ -11,8 +11,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let score = 0;
     let timeLeft = 30;
     let gameInterval;
-    let activeTarget = null;
     let isPlaying = false;
+
+    // Performance optimization: DOM Object Pooling
+    // Instead of creating and destroying DOM elements rapidly, we create one and reuse it
+    let pooledTarget = document.createElement('div');
+    pooledTarget.classList.add('target', 'hidden');
+    pooledTarget.addEventListener('mousedown', hitTarget);
+    gameArea.appendChild(pooledTarget);
 
     // Audio effects (optional/placeholder)
     // const hitSound = new Audio('/static/hit.mp3');
@@ -41,10 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function endGame() {
         clearInterval(gameInterval);
         isPlaying = false;
-        if (activeTarget) {
-            activeTarget.remove();
-            activeTarget = null;
-        }
+
+        // Hide the pooled target instead of removing it
+        pooledTarget.classList.add('hidden');
 
         finalScoreDisplay.textContent = score;
         gameOverScreen.classList.remove('hidden');
@@ -55,11 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function spawnTarget() {
         if (!isPlaying) return;
 
-        if (activeTarget) activeTarget.remove();
-
-        const target = document.createElement('div');
-        target.classList.add('target');
-
         // Random position
         // gameArea is relative
         const maxX = gameArea.clientWidth - 50; // 50 is approx target width
@@ -68,13 +68,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const randomX = Math.floor(Math.random() * maxX);
         const randomY = Math.floor(Math.random() * maxY);
 
-        target.style.left = `${randomX}px`;
-        target.style.top = `${randomY}px`;
-
-        target.addEventListener('mousedown', hitTarget);
-
-        gameArea.appendChild(target);
-        activeTarget = target;
+        // Reposition and unhide the pooled target
+        pooledTarget.style.left = `${randomX}px`;
+        pooledTarget.style.top = `${randomY}px`;
+        pooledTarget.classList.remove('hidden');
     }
 
     function hitTarget(e) {
@@ -82,6 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Visual feedback
         // maybe add a particle effect later
+
+        // Instantly hide the target to prevent double-clicks
+        pooledTarget.classList.add('hidden');
 
         score++;
         scoreDisplay.textContent = score;

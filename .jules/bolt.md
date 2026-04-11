@@ -1,0 +1,3 @@
+## 2024-05-18 - DOM Object Pooling for Game Loop Optimization
+**Learning:** In fast-paced frontend game loops (like the arcade game in `app/static/game.js`), rapidly calling `document.createElement()` and `remove()` causes significant DOM churn, memory allocation overhead, and potential layout thrashing. Creating elements repeatedly is expensive in browsers.
+**Action:** Always prefer **DOM Object Pooling** for elements that appear and disappear rapidly. Create a single instance of the element (e.g., the target div) during initialization and reuse it by updating its position and toggling a `.hidden` CSS class (`display: none !important;`). This avoids the cost of continuously modifying the DOM tree.

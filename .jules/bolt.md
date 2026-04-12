@@ -1,0 +1,3 @@
+## 2024-05-18 - [DOM Operations Bottleneck in Game Loop]
+**Learning:** Constant DOM element creation and removal (`document.createElement()` and `remove()`) in the high-frequency game loop (`spawnTarget()` / `hitTarget()`) was a major performance bottleneck for the frontend, as shown by benchmark tests indicating ~72% improvement when avoiding it. The codebase architecture relies heavily on raw DOM manipulation without a virtual DOM layer to abstract these costs.
+**Action:** Always prefer DOM Object Pooling (creating elements once and toggling visibility via CSS classes like `.hidden` or updating styles) over continuous node creation/destruction in high-frequency events or game loops to minimize DOM churn and garbage collection overhead.

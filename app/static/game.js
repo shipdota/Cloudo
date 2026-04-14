@@ -42,8 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(gameInterval);
         isPlaying = false;
         if (activeTarget) {
-            activeTarget.remove();
-            activeTarget = null;
+            // DOM Object Pooling: hide instead of remove
+            activeTarget.classList.add('hidden');
         }
 
         finalScoreDisplay.textContent = score;
@@ -55,10 +55,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function spawnTarget() {
         if (!isPlaying) return;
 
-        if (activeTarget) activeTarget.remove();
-
-        const target = document.createElement('div');
-        target.classList.add('target');
+        // DOM Object Pooling: reuse existing element to reduce DOM churn and GC
+        let target = activeTarget;
+        if (!target) {
+            target = document.createElement('div');
+            target.classList.add('target');
+            target.addEventListener('mousedown', hitTarget);
+            gameArea.appendChild(target);
+            activeTarget = target;
+        } else {
+            target.classList.remove('hidden');
+        }
 
         // Random position
         // gameArea is relative
@@ -70,11 +77,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         target.style.left = `${randomX}px`;
         target.style.top = `${randomY}px`;
-
-        target.addEventListener('mousedown', hitTarget);
-
-        gameArea.appendChild(target);
-        activeTarget = target;
     }
 
     function hitTarget(e) {

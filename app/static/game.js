@@ -42,8 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(gameInterval);
         isPlaying = false;
         if (activeTarget) {
-            activeTarget.remove();
-            activeTarget = null;
+            activeTarget.classList.add('hidden');
         }
 
         finalScoreDisplay.textContent = score;
@@ -55,10 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function spawnTarget() {
         if (!isPlaying) return;
 
-        if (activeTarget) activeTarget.remove();
-
-        const target = document.createElement('div');
-        target.classList.add('target');
+        if (!activeTarget) {
+            activeTarget = document.createElement('div');
+            activeTarget.classList.add('target');
+            activeTarget.addEventListener('mousedown', hitTarget);
+            gameArea.appendChild(activeTarget);
+        } else {
+            activeTarget.classList.remove('hidden');
+        }
 
         // Random position
         // gameArea is relative
@@ -68,13 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const randomX = Math.floor(Math.random() * maxX);
         const randomY = Math.floor(Math.random() * maxY);
 
-        target.style.left = `${randomX}px`;
-        target.style.top = `${randomY}px`;
-
-        target.addEventListener('mousedown', hitTarget);
-
-        gameArea.appendChild(target);
-        activeTarget = target;
+        activeTarget.style.left = `${randomX}px`;
+        activeTarget.style.top = `${randomY}px`;
     }
 
     function hitTarget(e) {
@@ -82,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Visual feedback
         // maybe add a particle effect later
+        activeTarget.classList.add('hidden');
 
         score++;
         scoreDisplay.textContent = score;

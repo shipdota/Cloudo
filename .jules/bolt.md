@@ -1,0 +1,3 @@
+## 2025-04-17 - Database Indexing for Leaderboard Queries
+**Learning:** The application frequently queries the `scores` table, sorting by `score` descending for the leaderboard and user profiles (`app/main.py`). Without an index on this column, these queries trigger sequential scans, which become a significant performance bottleneck as the dataset grows.
+**Action:** Added a B-tree index on the `score` column (specifically `DESC`) in `schema.sql`. For future database schema designs, always analyze read/write patterns and ensure indexes are added for fields frequently used in `ORDER BY` or `WHERE` clauses.

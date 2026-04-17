@@ -43,6 +43,11 @@ create policy "Users can insert their own scores."
   on scores for insert
   with check ( auth.uid() = user_id );
 
+-- ⚡ Bolt Performance Optimization: Index on scores
+-- The leaderboard and profile queries frequently order by score DESC.
+-- Adding this index significantly reduces query time.
+create index idx_scores_score_desc on scores(score desc);
+
 -- Function to handle new user creation automatically
 create function public.handle_new_user()
 returns trigger as $$

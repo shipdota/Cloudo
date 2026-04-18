@@ -1,0 +1,3 @@
+## 2024-05-15 - [Database Index for Leaderboard Performance]
+**Learning:** The lack of an index on the `score` column caused full table scans during frequent sorting operations (`.order('score', desc=True)`) found in the `/leaderboard` and `/profile` routes, which is a significant performance bottleneck as the number of scores grows. Adding a B-tree index on the `score` column specifically ordered `DESC` directly optimizes these operations.
+**Action:** Always ensure that frequently sorted or filtered columns, especially in high-traffic endpoints like leaderboards, have appropriate indexes defined in the database schema.

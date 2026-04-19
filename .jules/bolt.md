@@ -1,0 +1,4 @@
+## 2024-05-15 - Synchronous Supabase Queries Optimization
+**Learning:** The `supabase-py` client uses `httpx` and handles synchronous network I/O blockingly. When rendering templates that require multiple independent queries (like fetching user profiles and scores in `app/main.py`), sequential execution forces an accumulation of network latency. The `supabase-py` client is inherently thread-safe for standard synchronous read requests since it uses the underlying `httpx` connection pool.
+
+**Action:** For performance, independent backend queries in Flask views should be explicitly parallelized using `concurrent.futures.ThreadPoolExecutor`. This dramatically reduces the total TTFB (Time to First Byte) by bounded I/O latency overlap without changing the underlying architecture or adding new async frameworks.

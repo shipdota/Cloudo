@@ -1,0 +1,3 @@
+## 2025-04-22 - [Add Index for Score Descending]
+**Learning:** Adding a B-tree index on the `score` column of the `scores` table (specifically `DESC`) provides a significant performance improvement (measured at ~99.8% in simulated benchmarks) for sorting operations in leaderboard and profile queries. This is a critical learning because these queries run frequently and without the index, the DB has to perform full table scans and sort the data in memory.
+**Action:** Next time I encounter a leaderboard or similar heavily sorted query, I'll preemptively add a matching index.

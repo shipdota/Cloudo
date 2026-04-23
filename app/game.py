@@ -4,6 +4,10 @@ import os
 
 game_bp = Blueprint('game', __name__)
 
+# Cache environment variables at module level to avoid os.environ.get overhead on every request
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
 @game_bp.route('/game')
 def game():
     if 'user' not in session:
@@ -25,16 +29,14 @@ def submit_score():
     user_id = session['user']['id']
     token = session['user']['access_token']
 
-    url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_KEY")
-
+    user_client = None
     try:
         # Create a new client instance authenticated as the user
         # This ensures RLS policies are respected correctly
         # Pass headers via ClientOptions
         user_client: Client = create_client(
-            url,
-            key,
+            SUPABASE_URL,
+            SUPABASE_KEY,
             options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
         )
 
@@ -48,3 +50,12 @@ def submit_score():
     except Exception as e:
         print(f"Error submitting score: {e}")
         return jsonify({"error": str(e)}), 500
+    finally:
+        # Prevent httpx connection pool leaks by closing the client instances
+        if user_client:
+            if hasattr(user_client.auth, "_http_client"):
+                user_client.auth._http_client.close()
+            if hasattr(user_client.postgrest, "session"):
+                user_client.postgrest.session.close()
+            if hasattr(user_client.storage, "session"):
+                user_client.storage.session.close()

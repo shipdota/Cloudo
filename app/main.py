@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
+import concurrent.futures
 
 main_bp = Blueprint('main', __name__)
 
@@ -32,18 +33,27 @@ def profile():
     user_id = session['user']['id']
 
     try:
-        # Fetch profile
-        profile_res = supabase.table('profiles').select('*').eq('id', user_id).single().execute()
+        # ⚡ Bolt Optimization: Use ThreadPoolExecutor for concurrent Supabase queries.
+        # Since the standard Supabase Python client executes queries synchronously,
+        # fetching the profile and scores sequentially creates a bottleneck.
+        # Running these independent queries concurrently significantly reduces the route's total latency.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            profile_future = executor.submit(
+                lambda: supabase.table('profiles').select('*').eq('id', user_id).single().execute()
+            )
+            scores_future = executor.submit(
+                lambda: supabase.table('scores') \
+                    .select('*') \
+                    .eq('user_id', user_id) \
+                    .order('score', desc=True) \
+                    .limit(5) \
+                    .execute()
+            )
+
+            profile_res = profile_future.result()
+            scores_res = scores_future.result()
+
         user_profile = profile_res.data
-
-        # Fetch user's recent top scores
-        scores_res = supabase.table('scores') \
-            .select('*') \
-            .eq('user_id', user_id) \
-            .order('score', desc=True) \
-            .limit(5) \
-            .execute()
-
         user_scores = scores_res.data
 
     except Exception as e:

@@ -57,3 +57,6 @@ $$ language plpgsql security definer;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Index for optimizing leaderboard and profile score descending queries
+create index scores_score_desc_idx on scores (score desc);

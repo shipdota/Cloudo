@@ -32,6 +32,9 @@ create table scores (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- Create index to improve performance for sorting by score DESC
+create index if not exists scores_score_desc_idx on scores (score desc);
+
 -- Set up RLS for scores
 alter table scores enable row level security;
 

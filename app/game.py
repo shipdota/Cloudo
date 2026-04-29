@@ -28,6 +28,7 @@ def submit_score():
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_KEY")
 
+    user_client = None
     try:
         # Create a new client instance authenticated as the user
         # This ensures RLS policies are respected correctly
@@ -48,3 +49,13 @@ def submit_score():
     except Exception as e:
         print(f"Error submitting score: {e}")
         return jsonify({"error": str(e)}), 500
+    finally:
+        # Explicitly close the underlying HTTP connections to prevent connection pool
+        # leaks and memory bloat over time since a new client is created per request
+        if user_client:
+            if hasattr(user_client, 'auth') and hasattr(user_client.auth, '_http_client'):
+                user_client.auth._http_client.close()
+            if hasattr(user_client, 'postgrest') and hasattr(user_client.postgrest, 'session'):
+                user_client.postgrest.session.close()
+            if hasattr(user_client, 'storage') and hasattr(user_client.storage, 'session'):
+                user_client.storage.session.close()

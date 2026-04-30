@@ -1,0 +1,3 @@
+## 2024-05-24 - ThreadPoolExecutor Instantiation Overhead
+**Learning:** Creating a new `ThreadPoolExecutor` inside a web request handler (like a Flask route) is a performance anti-pattern. While it solves the immediate issue of sequential network I/O latency, it introduces significant CPU and memory overhead by spawning and destroying OS threads on every single incoming request. Under load, this leads to thread thrashing and degrades server performance.
+**Action:** When implementing concurrent execution for network requests in backend routes, always instantiate the `ThreadPoolExecutor` globally at the module level (e.g., `executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)`) so the thread pool is reused across multiple incoming web requests.

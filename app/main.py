@@ -1,7 +1,11 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
+import concurrent.futures
 
 main_bp = Blueprint('main', __name__)
+
+# Global executor to avoid thread creation overhead on every request
+executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
 
 @main_bp.route('/')
 def index():
@@ -32,19 +36,27 @@ def profile():
     user_id = session['user']['id']
 
     try:
-        # Fetch profile
-        profile_res = supabase.table('profiles').select('*').eq('id', user_id).single().execute()
-        user_profile = profile_res.data
+        # ⚡ Bolt Optimization: Fetch profile and scores concurrently
+        # 💡 What: Replaced sequential database queries with concurrent execution using ThreadPoolExecutor
+        # 🎯 Why: Reduces the number of network round trips by overlapping the queries
+        # 📊 Impact: Effectively halves the database fetching latency for the `/profile` route
+        # 🔬 Measurement: Benchmarking sequential vs concurrent execution times
+        def fetch_profile():
+            return supabase.table('profiles').select('*').eq('id', user_id).single().execute().data
 
-        # Fetch user's recent top scores
-        scores_res = supabase.table('scores') \
-            .select('*') \
-            .eq('user_id', user_id) \
-            .order('score', desc=True) \
-            .limit(5) \
-            .execute()
+        def fetch_scores():
+            return supabase.table('scores') \
+                .select('*') \
+                .eq('user_id', user_id) \
+                .order('score', desc=True) \
+                .limit(5) \
+                .execute().data
 
-        user_scores = scores_res.data
+        future_profile = executor.submit(fetch_profile)
+        future_scores = executor.submit(fetch_scores)
+
+        user_profile = future_profile.result()
+        user_scores = future_scores.result()
 
     except Exception as e:
         user_profile = {}

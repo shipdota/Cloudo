@@ -1,7 +1,13 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
+import threading
+import time
 
 main_bp = Blueprint('main', __name__)
+
+# Global cache for leaderboard
+leaderboard_cache = {'data': None, 'expires_at': 0}
+leaderboard_cache_lock = threading.Lock()
 
 @main_bp.route('/')
 def index():
@@ -9,6 +15,16 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
+    # Check cache first
+    cached_scores = None
+    current_time = time.time()
+    with leaderboard_cache_lock:
+        if leaderboard_cache['data'] is not None and current_time < leaderboard_cache['expires_at']:
+            cached_scores = leaderboard_cache['data']
+
+    if cached_scores is not None:
+        return render_template('leaderboard.html', scores=cached_scores)
+
     try:
         # Fetch top 10 scores with user details
         response = supabase.table('scores') \
@@ -18,6 +34,11 @@ def leaderboard():
             .execute()
 
         scores = response.data
+
+        # Update cache (TTL 60 seconds)
+        with leaderboard_cache_lock:
+            leaderboard_cache['data'] = scores
+            leaderboard_cache['expires_at'] = time.time() + 60
     except Exception as e:
         scores = []
         print(f"Error fetching leaderboard: {e}")

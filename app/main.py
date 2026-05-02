@@ -1,7 +1,14 @@
+import time
+import threading
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
 
 main_bp = Blueprint('main', __name__)
+
+# Thread-safe TTL cache for leaderboard to reduce DB queries on read-heavy endpoint
+leaderboard_cache = {"data": None, "timestamp": 0}
+cache_lock = threading.Lock()
+CACHE_TTL = 60
 
 @main_bp.route('/')
 def index():
@@ -9,6 +16,15 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
+    current_time = time.time()
+
+    # Fast path: Check cache
+    with cache_lock:
+        if leaderboard_cache["data"] is not None and current_time - leaderboard_cache["timestamp"] < CACHE_TTL:
+            scores = leaderboard_cache["data"]
+            return render_template('leaderboard.html', scores=scores)
+
+    # Cache miss: Fetch from Supabase (outside lock to prevent blocking)
     try:
         # Fetch top 10 scores with user details
         response = supabase.table('scores') \
@@ -18,6 +34,12 @@ def leaderboard():
             .execute()
 
         scores = response.data
+
+        # Update cache
+        with cache_lock:
+            leaderboard_cache["data"] = scores
+            leaderboard_cache["timestamp"] = time.time()
+
     except Exception as e:
         scores = []
         print(f"Error fetching leaderboard: {e}")

@@ -1,7 +1,18 @@
+import time
+from threading import Lock
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
 
 main_bp = Blueprint('main', __name__)
+
+# Cache to avoid hitting DB on every leaderboard request.
+# Reduces database queries from 1 per request to max 1 per minute per worker thread.
+_leaderboard_cache = {
+    "data": None,
+    "timestamp": 0
+}
+_leaderboard_cache_lock = Lock()
+CACHE_TTL_SECONDS = 60
 
 @main_bp.route('/')
 def index():
@@ -9,18 +20,34 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
-    try:
-        # Fetch top 10 scores with user details
-        response = supabase.table('scores') \
-            .select('score, created_at, profiles(username, avatar_url)') \
-            .order('score', desc=True) \
-            .limit(10) \
-            .execute()
+    current_time = time.time()
+    scores = None
 
-        scores = response.data
-    except Exception as e:
-        scores = []
-        print(f"Error fetching leaderboard: {e}")
+    # Fast path: check cache with a quick lock
+    with _leaderboard_cache_lock:
+        if _leaderboard_cache["data"] is not None and (current_time - _leaderboard_cache["timestamp"]) < CACHE_TTL_SECONDS:
+            scores = _leaderboard_cache["data"]
+
+    # If cache miss, fetch data from DB (outside the lock)
+    if scores is None:
+        try:
+            # Fetch top 10 scores with user details
+            response = supabase.table('scores') \
+                .select('score, created_at, profiles(username, avatar_url)') \
+                .order('score', desc=True) \
+                .limit(10) \
+                .execute()
+
+            scores = response.data
+
+            # Update cache (with a quick lock)
+            with _leaderboard_cache_lock:
+                _leaderboard_cache["data"] = scores
+                _leaderboard_cache["timestamp"] = time.time()
+
+        except Exception as e:
+            scores = []
+            print(f"Error fetching leaderboard: {e}")
 
     return render_template('leaderboard.html', scores=scores)
 

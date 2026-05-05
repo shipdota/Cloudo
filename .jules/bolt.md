@@ -1,0 +1,3 @@
+## 2024-05-24 - [Avoid Forced Synchronous Layouts in Spawning Loop]
+**Learning:** In `app/static/game.js`, accessing layout-triggering properties like `clientWidth` and `clientHeight` immediately after DOM mutations (like `element.remove()`) within the same execution block triggers forced synchronous layouts (reflows). Caching these dimensions in `startGame` significantly improves performance in high-frequency spawning logic.
+**Action:** Always check for layout property access (e.g. `clientWidth`, `offsetHeight`) inside high-frequency functions or loops, and cache them whenever they don't dynamically change during the process.

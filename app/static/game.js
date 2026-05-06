@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let gameInterval;
     let activeTarget = null;
     let isPlaying = false;
+    let maxX = 0;
+    let maxY = 0;
 
     // Audio effects (optional/placeholder)
     // const hitSound = new Audio('/static/hit.mp3');
@@ -23,6 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
         scoreDisplay.textContent = score;
         timeDisplay.textContent = timeLeft;
         isPlaying = true;
+
+        // Cache layout dimensions to prevent forced reflows during the game loop
+        maxX = gameArea.clientWidth - 50; // 50 is approx target width
+        maxY = gameArea.clientHeight - 50;
 
         startScreen.classList.add('hidden');
         gameOverScreen.classList.add('hidden');
@@ -62,9 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Random position
         // gameArea is relative
-        const maxX = gameArea.clientWidth - 50; // 50 is approx target width
-        const maxY = gameArea.clientHeight - 50;
-
+        // Use cached maxX/maxY to avoid forced synchronous layout after activeTarget.remove()
         const randomX = Math.floor(Math.random() * maxX);
         const randomY = Math.floor(Math.random() * maxY);
 

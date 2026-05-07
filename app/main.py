@@ -1,7 +1,17 @@
-from flask import Blueprint, render_template, session, redirect, url_for
+from flask import Blueprint, render_template, session, redirect, url_for, current_app
 from .db import supabase
+import time
+import threading
 
 main_bp = Blueprint('main', __name__)
+
+# ⚡ Bolt Optimization: Thread-safe TTL Cache
+# 💡 What: In-memory cache for the leaderboard endpoint with a 60-second TTL.
+# 🎯 Why: Prevents expensive network/database calls to Supabase on every single page load for this read-heavy route.
+# 📊 Impact: Significantly speeds up response times and reduces database load under high traffic.
+leaderboard_cache = {'data': None, 'timestamp': 0}
+cache_lock = threading.Lock()
+CACHE_TTL = 60
 
 @main_bp.route('/')
 def index():
@@ -9,6 +19,17 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
+    current_time = time.time()
+
+    scores = None
+
+    with cache_lock:
+        if leaderboard_cache['data'] is not None and (current_time - leaderboard_cache['timestamp']) < CACHE_TTL:
+            scores = leaderboard_cache['data']
+
+    if scores is not None:
+        return render_template('leaderboard.html', scores=scores)
+
     try:
         # Fetch top 10 scores with user details
         response = supabase.table('scores') \
@@ -18,9 +39,14 @@ def leaderboard():
             .execute()
 
         scores = response.data
+
+        with cache_lock:
+            leaderboard_cache['data'] = scores
+            leaderboard_cache['timestamp'] = time.time()
+
     except Exception as e:
         scores = []
-        print(f"Error fetching leaderboard: {e}")
+        current_app.logger.error(f"Error fetching leaderboard: {e}")
 
     return render_template('leaderboard.html', scores=scores)
 
@@ -49,6 +75,6 @@ def profile():
     except Exception as e:
         user_profile = {}
         user_scores = []
-        print(f"Error fetching profile: {e}")
+        current_app.logger.error(f"Error fetching profile: {e}")
 
     return render_template('profile.html', profile=user_profile, scores=user_scores)

@@ -14,12 +14,20 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeTarget = null;
     let isPlaying = false;
 
+    // Cache for game area dimensions
+    let cachedMaxX = 0;
+    let cachedMaxY = 0;
+
     // Audio effects (optional/placeholder)
     // const hitSound = new Audio('/static/hit.mp3');
 
     function startGame() {
         score = 0;
         timeLeft = 30;
+
+        // Cache game area dimensions to prevent layout thrashing in spawnTarget
+        cachedMaxX = gameArea.clientWidth - 50; // 50 is approx target width
+        cachedMaxY = gameArea.clientHeight - 50;
         scoreDisplay.textContent = score;
         timeDisplay.textContent = timeLeft;
         isPlaying = true;
@@ -60,13 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const target = document.createElement('div');
         target.classList.add('target');
 
-        // Random position
-        // gameArea is relative
-        const maxX = gameArea.clientWidth - 50; // 50 is approx target width
-        const maxY = gameArea.clientHeight - 50;
-
-        const randomX = Math.floor(Math.random() * maxX);
-        const randomY = Math.floor(Math.random() * maxY);
+        // Random position using cached dimensions to avoid forced synchronous layout
+        const randomX = Math.floor(Math.random() * cachedMaxX);
+        const randomY = Math.floor(Math.random() * cachedMaxY);
 
         target.style.left = `${randomX}px`;
         target.style.top = `${randomY}px`;

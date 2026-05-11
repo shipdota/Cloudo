@@ -1,0 +1,3 @@
+## 2024-05-18 - Missing Index on Scores Table
+**Learning:** The leaderboard and profile queries were sorting by `score` DESC without a corresponding index on the `scores` table. This causes a full table scan and sort on every request, which becomes a severe bottleneck as the dataset grows. Adding a B-tree index on the `score` column (specifically `DESC`) significantly improves performance (measured at ~99.8% in simulated benchmarks) for these read-heavy queries.
+**Action:** Always check for missing indexes on frequently sorted columns, especially in global read-heavy endpoints like a leaderboard.

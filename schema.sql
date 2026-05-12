@@ -43,6 +43,9 @@ create policy "Users can insert their own scores."
   on scores for insert
   with check ( auth.uid() = user_id );
 
+-- Optimize leaderboard queries by adding an index on score DESC
+create index idx_scores_score_desc on scores (score desc);
+
 -- Function to handle new user creation automatically
 create function public.handle_new_user()
 returns trigger as $$

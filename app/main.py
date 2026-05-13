@@ -1,7 +1,16 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
+import time
+import threading
 
 main_bp = Blueprint('main', __name__)
+
+_leaderboard_cache = {
+    'data': None,
+    'expires_at': 0
+}
+_leaderboard_lock = threading.Lock()
+CACHE_TTL = 60
 
 @main_bp.route('/')
 def index():
@@ -9,18 +18,32 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
-    try:
-        # Fetch top 10 scores with user details
-        response = supabase.table('scores') \
-            .select('score, created_at, profiles(username, avatar_url)') \
-            .order('score', desc=True) \
-            .limit(10) \
-            .execute()
+    current_time = time.time()
 
-        scores = response.data
-    except Exception as e:
-        scores = []
-        print(f"Error fetching leaderboard: {e}")
+    # Fast path: check cache validity
+    if _leaderboard_cache['data'] is not None and current_time < _leaderboard_cache['expires_at']:
+        scores = _leaderboard_cache['data']
+    else:
+        with _leaderboard_lock:
+            # Double-checked locking pattern
+            if _leaderboard_cache['data'] is None or current_time >= _leaderboard_cache['expires_at']:
+                try:
+                    # Fetch top 10 scores with user details
+                    response = supabase.table('scores') \
+                        .select('score, created_at, profiles(username, avatar_url)') \
+                        .order('score', desc=True) \
+                        .limit(10) \
+                        .execute()
+
+                    scores = response.data
+
+                    _leaderboard_cache['data'] = scores
+                    _leaderboard_cache['expires_at'] = time.time() + CACHE_TTL
+                except Exception as e:
+                    scores = []
+                    print(f"Error fetching leaderboard: {e}")
+            else:
+                scores = _leaderboard_cache['data']
 
     return render_template('leaderboard.html', scores=scores)
 

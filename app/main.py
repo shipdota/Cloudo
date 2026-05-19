@@ -1,7 +1,14 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
+import time
+from threading import Lock
 
 main_bp = Blueprint('main', __name__)
+
+# Cache for leaderboard to reduce database queries on read-heavy endpoint
+_leaderboard_cache = {"data": None, "timestamp": 0}
+_leaderboard_lock = Lock()
+CACHE_TTL = 60  # seconds
 
 @main_bp.route('/')
 def index():
@@ -9,19 +16,36 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
-    try:
-        # Fetch top 10 scores with user details
-        response = supabase.table('scores') \
-            .select('score, created_at, profiles(username, avatar_url)') \
-            .order('score', desc=True) \
-            .limit(10) \
-            .execute()
+    # Fast path: check cache without lock to prevent contention
+    current_time = time.time()
+    if _leaderboard_cache["data"] is not None and current_time - _leaderboard_cache["timestamp"] < CACHE_TTL:
+        scores = _leaderboard_cache["data"]
+    else:
+        # Slow path: acquire lock and double-check (double-checked locking pattern)
+        with _leaderboard_lock:
+            # Re-check cache validity in case another thread updated it while we were waiting for the lock
+            current_time = time.time()
+            if _leaderboard_cache["data"] is not None and current_time - _leaderboard_cache["timestamp"] < CACHE_TTL:
+                scores = _leaderboard_cache["data"]
+            else:
+                try:
+                    # Fetch top 10 scores with user details
+                    response = supabase.table('scores') \
+                        .select('score, created_at, profiles(username, avatar_url)') \
+                        .order('score', desc=True) \
+                        .limit(10) \
+                        .execute()
 
-        scores = response.data
-    except Exception as e:
-        scores = []
-        print(f"Error fetching leaderboard: {e}")
+                    scores = response.data
 
+                    # Update cache
+                    _leaderboard_cache["data"] = scores
+                    _leaderboard_cache["timestamp"] = time.time()
+                except Exception as e:
+                    scores = []
+                    print(f"Error fetching leaderboard: {e}")
+
+    # Render template outside of the lock to minimize lock duration
     return render_template('leaderboard.html', scores=scores)
 
 @main_bp.route('/profile')

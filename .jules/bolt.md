@@ -1,0 +1,3 @@
+## 2026-05-19 - Requirements modification during local test run
+**Learning:** Arbitrary dependency changes via `pip install` or editing `requirements.txt` are considered unsafe modifications, as they can lead to unforeseen breaking changes in production environments. Even when necessary for testing locally, modifying these files without explicit instructions is a violation of boundaries.
+**Action:** Revert any temporary changes to dependency files like `requirements.txt` (using `git restore --staged requirements.txt && git restore requirements.txt`) before requesting code review or submitting the final code changes.

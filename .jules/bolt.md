@@ -1,0 +1,3 @@
+## 2024-05-27 - Caching Heavy Endpoints
+**Learning:** Global read-heavy endpoints like the leaderboard cause heavy database load on every request when left uncached.
+**Action:** Implemented a thread-safe, in-memory TTL (Time-To-Live) cache using standard Python library tools (a dictionary with expiration timestamps via `time.time()` and a `threading.Lock()`). Avoided cache stampedes upon expiration by utilizing the double-checked locking pattern (fast path check without locking, slow path with locking and rechecking). Ensure that the lock encompasses only the cache condition checks and the database call, keeping expensive operations like `render_template` outside of the lock. Avoided external dependencies like `cachetools`.

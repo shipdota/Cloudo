@@ -1,0 +1,3 @@
+## 2024-05-29 - Double-Checked Locking in TTL Cache
+**Learning:** When implementing in-memory TTL caches to avoid repeated expensive database queries on endpoints like `/leaderboard`, a naive implementation can lead to cache stampedes. It's critical to use the double-checked locking pattern: check cache validity, acquire lock, and check validity again before updating. Also, never return an expensive function call directly from within the lock, as Python evaluates `return <expression>` before releasing the lock.
+**Action:** Implemented a thread-safe, in-memory TTL cache with double-checked locking for the `/leaderboard` endpoint using standard library tools (`threading.Lock`, `time.time`), ensuring the lock duration is minimized.

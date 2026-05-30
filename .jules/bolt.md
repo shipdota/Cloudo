@@ -1,0 +1,3 @@
+## 2024-05-30 - In-Memory TTL Caching Pattern
+**Learning:** When implementing thread-safe in-memory caching to avoid hitting rate limits or reducing DB load, a simple lock around the cache update can lead to cache stampedes. Furthermore, Python evaluates `return <expression>` before releasing the lock in a `with` block, meaning expensive operations like `render_template()` can inadvertently be locked.
+**Action:** Use the double-checked locking pattern (check cache valid, acquire lock, check cache valid again). Minimize lock duration by only doing the cache read/write inside the lock and saving the result to a variable before exiting the `with` block.

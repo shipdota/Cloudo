@@ -1,0 +1,3 @@
+## 2024-05-17 - In-Memory TTL Cache and Stampedes
+**Learning:** When implementing in-memory TTL caches, cache stampedes can occur if multiple threads evaluate the cache as expired simultaneously and all attempt to perform the expensive update operation.
+**Action:** Always use the double-checked locking pattern: check validity (fast path), acquire the lock, and re-check validity (recalculating any timestamps inside the lock) before updating. Also, ensure expensive operations (like `render_template()`) happen outside the lock to minimize contention.

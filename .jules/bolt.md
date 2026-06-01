@@ -1,0 +1,3 @@
+## 2024-05-18 - Double-Checked Locking in Flask
+**Learning:** When implementing thread-safe caching with `threading.Lock` in Flask, Python evaluates `return <expression>` *before* releasing the lock in a `with` block. If `render_template` or other expensive operations are returned directly from within the lock block, it defeats the purpose by extending the lock duration.
+**Action:** Store the result of the expensive cache update in a variable, exit the `with` lock block, and then use the variable to render the template or perform other expensive operations.

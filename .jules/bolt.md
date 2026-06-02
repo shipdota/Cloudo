@@ -1,0 +1,3 @@
+## 2024-05-24 - Missing Database Index for Leaderboard
+**Learning:** Found that `schema.sql` was missing an index on the `score` column of the `scores` table. Without it, the `/leaderboard` endpoint and profile queries would perform a sequential scan on the entire table and sort all rows in memory every time. Adding a B-tree index on the `score` column (specifically `DESC`) significantly improves the performance of leaderboard queries as the data grows.
+**Action:** When adding or reviewing queries that sort by a specific column, especially in tables that are expected to grow (like scores), always ensure an appropriate index is present in the database schema.

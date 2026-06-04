@@ -5,7 +5,7 @@ import concurrent.futures
 main_bp = Blueprint('main', __name__)
 
 # Global executor to avoid thread creation overhead on every request
-executor = concurrent.futures.ThreadPoolExecutor()
+executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 @main_bp.route('/')
 def index():

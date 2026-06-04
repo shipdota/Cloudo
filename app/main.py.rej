@@ -1,0 +1,12 @@
+--- app/main.py
++++ app/main.py
+@@ -3,8 +3,8 @@
+ import concurrent.futures
+
+ main_bp = Blueprint('main', __name__)
+
+ # Global executor to avoid thread creation overhead on every request
+-executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
++executor = concurrent.futures.ThreadPoolExecutor()
+
+ @main_bp.route('/')

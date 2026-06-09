@@ -1,0 +1,3 @@
+## 2024-05-24 - Thread-safe TTL Caching Pattern
+**Learning:** In standard Python, simple dictionary caching for endpoints like `/leaderboard` can cause cache stampedes under high concurrency when the TTL expires.
+**Action:** Use the double-checked locking pattern (check expiration, acquire `threading.Lock`, recalculate timestamp, re-check expiration, then fetch and update) to prevent multiple threads from simultaneously executing expensive database queries on cache miss. Also, ensure fallback to old data (`cache['data'] or []`) in case of DB exceptions to avoid returning `None`. Ensure expensive operations like `render_template` are not inside the lock block.

@@ -1,0 +1,3 @@
+## 2024-05-24 - Database Index on Scores Table
+**Learning:** The application heavily relies on sorting scores in descending order (`order('score', desc=True)`) on the `/leaderboard` and `/profile` routes. The absence of a targeted index on the `score` column caused these operations to be a bottleneck as the dataset grows.
+**Action:** Always verify if frequently sorted or filtered columns have appropriate indexes in the schema. In this case, adding a B-tree index specifically for descending sorts (`create index scores_score_desc_idx on scores (score desc);`) significantly optimizes these queries without complex backend modifications.

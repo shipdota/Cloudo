@@ -1,0 +1,3 @@
+## 2024-05-15 - Double-checked Locking for Flask Leaderboard Cache
+**Learning:** In standard synchronous Flask routes doing expensive DB calls (like the Supabase leaderboard query), a simple dictionary TTL cache can cause a "cache stampede" where multiple concurrent requests see an expired cache and all query the DB simultaneously.
+**Action:** When implementing in-memory TTL caches, use the double-checked locking pattern: check if the cache is valid, and if not, acquire a `threading.Lock` and re-check the validity before querying. Ensure the current timestamp is recalculated inside the lock to avoid race conditions. Also ensure that the lock is released before rendering templates or returning.

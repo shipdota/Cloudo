@@ -1,7 +1,13 @@
-from flask import Blueprint, render_template, session, redirect, url_for
+import time
+import threading
+from flask import Blueprint, render_template, session, redirect, url_for, current_app
 from .db import supabase
 
 main_bp = Blueprint('main', __name__)
+
+_leaderboard_cache = {'data': None, 'expires_at': 0}
+_leaderboard_lock = threading.Lock()
+CACHE_TTL = 30  # seconds
 
 @main_bp.route('/')
 def index():
@@ -9,18 +15,33 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
-    try:
-        # Fetch top 10 scores with user details
-        response = supabase.table('scores') \
-            .select('score, created_at, profiles(username, avatar_url)') \
-            .order('score', desc=True) \
-            .limit(10) \
-            .execute()
+    now = time.time()
 
-        scores = response.data
-    except Exception as e:
-        scores = []
-        print(f"Error fetching leaderboard: {e}")
+    # Fast path: Return cached data if valid
+    if _leaderboard_cache['data'] is not None and now < _leaderboard_cache['expires_at']:
+        scores = _leaderboard_cache['data']
+    else:
+        # Acquire lock to update cache
+        with _leaderboard_lock:
+            now = time.time()  # Recalculate time inside lock to prevent stampedes
+            if _leaderboard_cache['data'] is None or now >= _leaderboard_cache['expires_at']:
+                try:
+                    # Fetch top 10 scores with user details
+                    response = supabase.table('scores') \
+                        .select('score, created_at, profiles(username, avatar_url)') \
+                        .order('score', desc=True) \
+                        .limit(10) \
+                        .execute()
+
+                    _leaderboard_cache['data'] = response.data
+                    _leaderboard_cache['expires_at'] = now + CACHE_TTL
+                except Exception as e:
+                    current_app.logger.error(f"Error fetching leaderboard: {e}")
+                    # Fallback to cached data if possible or an empty list
+                    if _leaderboard_cache['data'] is None:
+                        _leaderboard_cache['data'] = []
+
+            scores = _leaderboard_cache['data']
 
     return render_template('leaderboard.html', scores=scores)
 

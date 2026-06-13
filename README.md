@@ -45,3 +45,16 @@ pytest tests/
 -   **Backend**: Python, Flask
 -   **Database**: Supabase (PostgreSQL) + Auth
 -   **Frontend**: HTML, CSS, JavaScript (Vanilla)
+
+## Standalone Web App (TaskBoard)
+
+This repository now also includes a standalone front-end web app at `webapp/`.
+
+### Run locally
+
+```bash
+cd webapp
+python -m http.server 8000
+```
+
+Then open `http://localhost:8000`.

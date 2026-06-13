@@ -11,6 +11,8 @@
         <a href="{{ url_for('main.index') }}" class="brand">CyberGame</a>
         <div class="nav-links">
             <a href="{{ url_for('main.index') }}">Home</a>
+            <a href="{{ url_for('main.web') }}">Web</a>
+            <a href="{{ url_for('main.app_page') }}">App</a>
             {% if session.get('user') %}
                 <a href="{{ url_for('game.game') }}">Play</a>
                 <a href="{{ url_for('main.profile') }}">Profile</a>

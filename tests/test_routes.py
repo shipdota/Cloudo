@@ -7,6 +7,18 @@ def test_home_page(client):
     assert response.status_code == 200
     assert b"Welcome to" in response.data
 
+def test_web_page(client):
+    response = client.get('/web')
+    assert response.status_code == 200
+    assert b"CyberGame" in response.data
+    assert b"Web" in response.data
+
+def test_app_page(client):
+    response = client.get('/app')
+    assert response.status_code == 200
+    assert b"CyberGame" in response.data
+    assert b"App" in response.data
+
 def test_login_page(client):
     response = client.get('/login')
     assert response.status_code == 200

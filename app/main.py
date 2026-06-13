@@ -7,6 +7,14 @@ main_bp = Blueprint('main', __name__)
 def index():
     return render_template('index.html')
 
+@main_bp.route('/web')
+def web():
+    return render_template('web.html')
+
+@main_bp.route('/app')
+def app_page():
+    return render_template('app.html')
+
 @main_bp.route('/leaderboard')
 def leaderboard():
     try:

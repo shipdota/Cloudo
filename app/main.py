@@ -1,7 +1,16 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
+import threading
+import time
 
 main_bp = Blueprint('main', __name__)
+
+_leaderboard_cache = {
+    'data': None,
+    'expiry': 0
+}
+_leaderboard_lock = threading.Lock()
+CACHE_TTL = 60  # 60 seconds
 
 @main_bp.route('/')
 def index():
@@ -9,18 +18,34 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
-    try:
-        # Fetch top 10 scores with user details
-        response = supabase.table('scores') \
-            .select('score, created_at, profiles(username, avatar_url)') \
-            .order('score', desc=True) \
-            .limit(10) \
-            .execute()
+    current_time = time.time()
 
-        scores = response.data
-    except Exception as e:
-        scores = []
-        print(f"Error fetching leaderboard: {e}")
+    # Fast path: check if cache is valid without lock
+    if _leaderboard_cache['data'] is not None and current_time < _leaderboard_cache['expiry']:
+        scores = _leaderboard_cache['data']
+    else:
+        # Slow path: acquire lock and double-check
+        with _leaderboard_lock:
+            # Recalculate time inside lock to prevent race conditions
+            current_time = time.time()
+            if _leaderboard_cache['data'] is None or current_time >= _leaderboard_cache['expiry']:
+                try:
+                    # Fetch top 10 scores with user details
+                    response = supabase.table('scores') \
+                        .select('score, created_at, profiles(username, avatar_url)') \
+                        .order('score', desc=True) \
+                        .limit(10) \
+                        .execute()
+
+                    _leaderboard_cache['data'] = response.data
+                    _leaderboard_cache['expiry'] = current_time + CACHE_TTL
+                except Exception as e:
+                    print(f"Error fetching leaderboard: {e}")
+                    # Keep old data if possible, else empty list
+                    if _leaderboard_cache['data'] is None:
+                        _leaderboard_cache['data'] = []
+
+            scores = _leaderboard_cache['data']
 
     return render_template('leaderboard.html', scores=scores)
 

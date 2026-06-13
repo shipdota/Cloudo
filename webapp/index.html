@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TaskBoard Web App</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>TaskBoard</h1>
+        <p>A lightweight web app to track your daily tasks.</p>
+      </header>
+
+      <section class="card input-card">
+        <form id="task-form">
+          <input id="task-input" type="text" placeholder="Add a task..." maxlength="120" required />
+          <button type="submit">Add</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="toolbar">
+          <span id="task-count">0 tasks</span>
+          <button id="clear-completed" type="button">Clear completed</button>
+        </div>
+        <ul id="task-list" aria-live="polite"></ul>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

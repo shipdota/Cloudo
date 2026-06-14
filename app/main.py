@@ -1,7 +1,17 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
+import time
+import threading
 
 main_bp = Blueprint('main', __name__)
+
+# TTL Cache for leaderboard to prevent frequent DB queries
+_leaderboard_cache = {
+    'data': None,
+    'expires_at': 0
+}
+_leaderboard_lock = threading.Lock()
+CACHE_TTL = 30  # seconds
 
 @main_bp.route('/')
 def index():
@@ -9,18 +19,37 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
-    try:
-        # Fetch top 10 scores with user details
-        response = supabase.table('scores') \
-            .select('score, created_at, profiles(username, avatar_url)') \
-            .order('score', desc=True) \
-            .limit(10) \
-            .execute()
+    global _leaderboard_cache
+    current_time = time.time()
 
-        scores = response.data
-    except Exception as e:
-        scores = []
-        print(f"Error fetching leaderboard: {e}")
+    # Fast path: Return cached data if valid
+    if _leaderboard_cache['data'] is not None and current_time < _leaderboard_cache['expires_at']:
+        return render_template('leaderboard.html', scores=_leaderboard_cache['data'])
+
+    # Cache miss or expired: Acquire lock for double-checked caching
+    with _leaderboard_lock:
+        current_time = time.time()
+        # Double-check inside lock
+        if _leaderboard_cache['data'] is not None and current_time < _leaderboard_cache['expires_at']:
+            scores = _leaderboard_cache['data']
+        else:
+            try:
+                # Fetch top 10 scores with user details
+                response = supabase.table('scores') \
+                    .select('score, created_at, profiles(username, avatar_url)') \
+                    .order('score', desc=True) \
+                    .limit(10) \
+                    .execute()
+
+                scores = response.data
+
+                # Update cache
+                _leaderboard_cache['data'] = scores
+                _leaderboard_cache['expires_at'] = current_time + CACHE_TTL
+            except Exception as e:
+                # Fallback to existing cache data if possible, else empty list
+                scores = _leaderboard_cache['data'] or []
+                print(f"Error fetching leaderboard: {e}")
 
     return render_template('leaderboard.html', scores=scores)
 

@@ -1,0 +1,3 @@
+## 2024-06-17 - Thread-safe Caching with Double-Checked Locking
+**Learning:** When implementing in-memory TTL caches in multithreaded environments like Flask, using a simple lock can lead to cache stampedes upon expiration if multiple threads wait on the lock and all proceed to update the cache sequentially.
+**Action:** Use the double-checked locking pattern: check if the cache is valid (fast path), and if not, acquire the lock and re-check validity inside the lock before performing the expensive update operation to prevent race conditions and ensure only one thread updates the cache.

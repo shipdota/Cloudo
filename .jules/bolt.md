@@ -1,0 +1,3 @@
+## 2024-05-24 - Thread-safe TTL cache pattern
+**Learning:** When implementing in-memory TTL caches, use the double-checked locking pattern to prevent cache stampedes upon expiration. Ensure that variables used for the check, such as the current timestamp, are recalculated inside the lock to avoid using stale values that could lead to race conditions.
+**Action:** Always recalculate current timestamp inside the lock and re-check cache validity before fetching from DB.

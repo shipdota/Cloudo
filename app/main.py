@@ -1,7 +1,13 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from .db import supabase
+import time
+import threading
 
 main_bp = Blueprint('main', __name__)
+
+_leaderboard_cache = {"data": None, "timestamp": 0}
+_leaderboard_lock = threading.Lock()
+CACHE_TTL = 10  # Cache duration in seconds
 
 @main_bp.route('/')
 def index():
@@ -9,18 +15,34 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
-    try:
-        # Fetch top 10 scores with user details
-        response = supabase.table('scores') \
-            .select('score, created_at, profiles(username, avatar_url)') \
-            .order('score', desc=True) \
-            .limit(10) \
-            .execute()
+    # Fast path check
+    now = time.time()
+    if _leaderboard_cache["data"] is not None and now - _leaderboard_cache["timestamp"] < CACHE_TTL:
+        scores = _leaderboard_cache["data"]
+        return render_template('leaderboard.html', scores=scores)
 
-        scores = response.data
-    except Exception as e:
-        scores = []
-        print(f"Error fetching leaderboard: {e}")
+    # Cache expired or not populated yet, acquire lock
+    with _leaderboard_lock:
+        # Double-checked locking
+        now = time.time()
+        if _leaderboard_cache["data"] is not None and now - _leaderboard_cache["timestamp"] < CACHE_TTL:
+            scores = _leaderboard_cache["data"]
+        else:
+            try:
+                # Fetch top 10 scores with user details
+                response = supabase.table('scores') \
+                    .select('score, created_at, profiles(username, avatar_url)') \
+                    .order('score', desc=True) \
+                    .limit(10) \
+                    .execute()
+
+                scores = response.data
+                _leaderboard_cache["data"] = scores
+                _leaderboard_cache["timestamp"] = time.time()
+            except Exception as e:
+                scores = _leaderboard_cache["data"] or []
+                from flask import current_app
+                current_app.logger.error(f"Error fetching leaderboard: {e}")
 
     return render_template('leaderboard.html', scores=scores)
 

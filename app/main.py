@@ -1,7 +1,14 @@
-from flask import Blueprint, render_template, session, redirect, url_for
+from flask import Blueprint, render_template, session, redirect, url_for, current_app
 from .db import supabase
+import threading
+import time
 
 main_bp = Blueprint('main', __name__)
+
+# TTL Cache for leaderboard
+_leaderboard_cache = {'data': None, 'expires_at': 0}
+_leaderboard_lock = threading.Lock()
+LEADERBOARD_TTL_SECONDS = 30
 
 @main_bp.route('/')
 def index():
@@ -9,18 +16,31 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
-    try:
-        # Fetch top 10 scores with user details
-        response = supabase.table('scores') \
-            .select('score, created_at, profiles(username, avatar_url)') \
-            .order('score', desc=True) \
-            .limit(10) \
-            .execute()
+    current_time = time.time()
 
-        scores = response.data
-    except Exception as e:
-        scores = []
-        print(f"Error fetching leaderboard: {e}")
+    # Fast path check
+    if _leaderboard_cache['data'] is not None and current_time < _leaderboard_cache['expires_at']:
+        return render_template('leaderboard.html', scores=_leaderboard_cache['data'])
+
+    with _leaderboard_lock:
+        current_time = time.time() # Recalculate inside lock
+        if _leaderboard_cache['data'] is None or current_time >= _leaderboard_cache['expires_at']:
+            try:
+                # Fetch top 10 scores with user details
+                response = supabase.table('scores') \
+                    .select('score, created_at, profiles(username, avatar_url)') \
+                    .order('score', desc=True) \
+                    .limit(10) \
+                    .execute()
+
+                _leaderboard_cache['data'] = response.data
+                _leaderboard_cache['expires_at'] = current_time + LEADERBOARD_TTL_SECONDS
+            except Exception as e:
+                current_app.logger.error(f"Error fetching leaderboard: {e}")
+                # Ensure we have a default to prevent template errors
+                _leaderboard_cache['data'] = _leaderboard_cache['data'] or []
+
+        scores = _leaderboard_cache['data']
 
     return render_template('leaderboard.html', scores=scores)
 
@@ -49,6 +69,6 @@ def profile():
     except Exception as e:
         user_profile = {}
         user_scores = []
-        print(f"Error fetching profile: {e}")
+        current_app.logger.error(f"Error fetching profile: {e}")
 
     return render_template('profile.html', profile=user_profile, scores=user_scores)

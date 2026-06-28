@@ -1,0 +1,3 @@
+## 2024-06-28 - Double-Checked Locking for Caching
+**Learning:** In-memory TTL caches require double-checked locking to prevent cache stampedes under high concurrency. Simply checking if the cache is expired and then acquiring the lock can lead to multiple threads re-evaluating the cache simultaneously. Also, inside a `with lock:` block, `return <expression>` evaluates the expression before releasing the lock, so expensive operations must not be returned directly.
+**Action:** Always implement double-checked locking: check validity, acquire lock, re-check validity. Calculate timestamps and variables inside the lock to avoid using stale values.

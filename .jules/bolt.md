@@ -1,0 +1,3 @@
+## 2026-06-29 - Thread-safe TTL Caching in Flask
+**Learning:** Implementing in-memory TTL caching for database queries in Flask requires careful concurrency management. Without double-checked locking, multiple requests could trigger simultaneous cache updates (cache stampedes) when the TTL expires. Furthermore, executing slow operations like `render_template` inside the lock block drastically reduces concurrency.
+**Action:** Always use the double-checked locking pattern when implementing thread-safe cache updates, ensuring timestamps are recalculated inside the lock. Keep the critical section as small as possible by performing expensive rendering or data transformations outside the lock block.

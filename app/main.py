@@ -1,7 +1,15 @@
-from flask import Blueprint, render_template, session, redirect, url_for
+import time
+import threading
+from flask import Blueprint, render_template, session, redirect, url_for, current_app
 from .db import supabase
 
 main_bp = Blueprint('main', __name__)
+
+# Cache for leaderboard to reduce database load
+# Structure: {'data': [...], 'expires_at': timestamp}
+_leaderboard_cache = {'data': None, 'expires_at': 0}
+_leaderboard_lock = threading.Lock()
+CACHE_TTL = 60  # Cache duration in seconds
 
 @main_bp.route('/')
 def index():
@@ -9,19 +17,38 @@ def index():
 
 @main_bp.route('/leaderboard')
 def leaderboard():
-    try:
-        # Fetch top 10 scores with user details
-        response = supabase.table('scores') \
-            .select('score, created_at, profiles(username, avatar_url)') \
-            .order('score', desc=True) \
-            .limit(10) \
-            .execute()
+    now = time.time()
 
-        scores = response.data
-    except Exception as e:
-        scores = []
-        print(f"Error fetching leaderboard: {e}")
+    # Fast path: Check if cache is valid (without lock)
+    if _leaderboard_cache['data'] is not None and _leaderboard_cache['expires_at'] > now:
+        scores = _leaderboard_cache['data']
+    else:
+        # Cache miss or expired, acquire lock
+        with _leaderboard_lock:
+            # Re-check validity inside lock (double-checked locking)
+            # Recalculate time.time() to avoid stale timestamp issues
+            now = time.time()
+            if _leaderboard_cache['data'] is not None and _leaderboard_cache['expires_at'] > now:
+                scores = _leaderboard_cache['data']
+            else:
+                try:
+                    # Fetch top 10 scores with user details
+                    response = supabase.table('scores') \
+                        .select('score, created_at, profiles(username, avatar_url)') \
+                        .order('score', desc=True) \
+                        .limit(10) \
+                        .execute()
 
+                    # Update cache
+                    _leaderboard_cache['data'] = response.data
+                    _leaderboard_cache['expires_at'] = now + CACHE_TTL
+                    scores = response.data
+                except Exception as e:
+                    current_app.logger.error(f"Error fetching leaderboard: {e}")
+                    # Fallback to old cache or empty list if no old cache
+                    scores = _leaderboard_cache['data'] or []
+
+    # Expensive render_template called outside the lock
     return render_template('leaderboard.html', scores=scores)
 
 @main_bp.route('/profile')

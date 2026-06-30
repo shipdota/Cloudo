@@ -1,0 +1,3 @@
+## 2024-07-16 - Implementing Thread-Safe Caching in Flask
+**Learning:** When implementing in-memory TTL caches in a multi-threaded Flask environment, the double-checked locking pattern is crucial to prevent cache stampedes upon expiration. Furthermore, due to how Python evaluates `return <expression>` before releasing the lock in a `with` block, returning expensive operations (like `render_template`) directly from within the lock block defeats the purpose by artificially extending the lock duration.
+**Action:** Always minimize lock duration by only reading/writing the cache dictionary inside the lock block. Store the result in a variable, exit the `with` block, and return the variable.

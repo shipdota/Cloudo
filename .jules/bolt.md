@@ -1,0 +1,3 @@
+## 2024-07-01 - Prevent Cache Stampedes with Double-Checked Locking
+**Learning:** When implementing in-memory TTL caches to optimize frequent database queries (like leaderboard fetch), relying solely on single-check expiration logic without locking leads to cache stampedes under concurrent loads, degrading performance instead of improving it.
+**Action:** Always use the double-checked locking pattern: check validity (fast path), acquire the lock if invalid, recalculate check variables (e.g. current time), and verify validity again before performing the expensive update. Also ensure that expensive template rendering or returning happens outside the lock to minimize contention.

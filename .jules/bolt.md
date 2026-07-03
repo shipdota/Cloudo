@@ -1,0 +1,3 @@
+## 2024-10-24 - Uncached Database Queries on High-Traffic Routes
+**Learning:** Found that the /leaderboard route, which is likely high-traffic, was making synchronous database queries on every request. This is a common performance bottleneck in Flask applications that do not utilize connection pooling or caching.
+**Action:** Implemented an in-memory TTL cache using `threading.Lock` and double-checked locking to prevent cache stampedes. When dealing with high-traffic endpoints that return relatively static or slowly changing data, always consider caching as a primary defense against database overload.

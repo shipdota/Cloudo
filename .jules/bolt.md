@@ -1,0 +1,3 @@
+## 2024-07-05 - In-Memory Caching for High-Traffic Routes
+**Learning:** Adding an in-memory TTL cache using a simple dictionary and `threading.Lock` avoids adding third-party cache dependencies while effectively mitigating database load on global read-heavy endpoints like `/leaderboard`. Using the double-checked locking pattern is crucial to prevent cache stampedes under high concurrency.
+**Action:** Apply double-checked locking for global caches in Flask apps where possible to minimize lock contention, ensuring expensive logic is performed within the lock while I/O operations like template rendering happen outside.
